@@ -228,6 +228,32 @@ export const CluesResult = z.object({
 });
 export type CluesResult = z.infer<typeof CluesResult>;
 
+// Walking routes and "where could she be by now" (design change 13:25).
+export const Cctv = z.object({ lat: z.number(), lng: z.number(), purpose: z.string().nullable(), address: z.string().nullable() });
+export type Cctv = z.infer<typeof Cctv>;
+
+export const RouteResult = z.object({
+  to_place_id: z.string(),
+  to_name: z.string(),
+  rank: z.number().int(),
+  layer: z.enum(["routine", "past", "hub"]),
+  coords: z.array(z.tuple([z.number(), z.number()])), // [lat, lng] street route from last seen (walking)
+  distance_km: z.number(),
+  walk_hours: z.number(), // at WALK_KMH
+  reach: z.object({
+    hours: z.number(),
+    km: z.number(), // min(distance, hours × WALK_KMH)
+    point: LatLng, // where she could be by now on this route
+    walked: z.array(z.tuple([z.number(), z.number()])), // route prefix up to the reach point
+  }),
+  cctvs: z.array(Cctv), // public CCTVs within 80 m of the walked part, in route order
+});
+export type RouteResult = z.infer<typeof RouteResult>;
+
+export const RoutesInput = z.object({ plan: z.lazy(() => Plan), elapsed_hours: z.number().min(0).max(24) });
+export const RoutesResult = z.object({ walk_kmh: z.number(), elapsed_hours: z.number(), routes: z.array(RouteResult) });
+export type RoutesResult = z.infer<typeof RoutesResult>;
+
 // Map component props (lane C implements, lane D consumes)
 export type MapViewProps = {
   plan?: Plan | null;
@@ -238,4 +264,6 @@ export type MapViewProps = {
   onSelectImagery?: (id: string) => void;
   present?: boolean;
   clues?: CluesResult | null; // draw the tower radius + numbered clue spots
+  routes?: RoutesResult | null; // walking routes, reach points and CCTVs
+  tour?: boolean; // present-mode camera tour (follow the route)
 };
