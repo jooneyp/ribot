@@ -35,7 +35,9 @@
       "family_words_en": [
         "My mother came to Seoul 62 years ago. She came from the countryside with a friend to find work, and she has lived in Seoul ever since.",
         "She came up to an unfamiliar Seoul at 17, did every kind of work, married my father and raised four children."
-      ]
+      ],
+      "article_date": "2023-09-22",
+      "article_date_note": "Publication date of the OhmyNews report (article:published_time). The son's '62 years ago' is relative to the event, which happened on or before this date."
     },
     {
       "id": "replay-srt",
