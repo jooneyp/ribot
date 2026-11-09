@@ -31,9 +31,9 @@ export default function ThenNow({ imagery, onClose }: { imagery: EraImagery; onC
       </button>
       {onClose && <button type="button" onClick={onClose} aria-label="Close Then/Now comparison" className="absolute right-5 top-5 z-30 grid h-11 w-11 place-items-center rounded-full border border-white/35 bg-black/65 text-2xl leading-none backdrop-blur hover:bg-black/80 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/70 md:right-8 md:top-8">×</button>}
       {imagery.photo && <figure className="absolute bottom-20 right-5 z-10 w-36 rotate-2 bg-[#f6f2e8] p-2 pb-7 text-[#25251f] shadow-2xl md:bottom-24 md:right-9 md:w-52 md:p-3 md:pb-9"><div className="relative aspect-[4/3] overflow-hidden bg-neutral-300"><Image src={imagery.photo.src} alt={imagery.photo.caption} fill unoptimized draggable={false} className="object-cover" sizes="208px" /></div><figcaption className="mt-2 line-clamp-2 text-center text-[10px] font-medium leading-tight md:text-xs">{imagery.photo.caption}</figcaption></figure>}
-      <footer className="absolute inset-x-0 bottom-0 z-30 flex min-h-16 items-center justify-between gap-5 bg-[#171714]/90 px-5 py-3 text-xs backdrop-blur md:px-9 md:text-sm">
+      <footer className="absolute inset-x-0 bottom-0 z-30 grid min-h-16 grid-cols-2 items-center gap-5 bg-[#171714]/90 px-5 py-3 text-xs backdrop-blur md:px-9 md:text-sm">
         <div className="min-w-0"><p className="truncate font-semibold text-white">{imagery.place_label}</p><p className="truncate text-white/62">Drag the divider to compare the same place.</p></div>
-        <a href={imagery.source_url} target="_blank" rel="noreferrer" className="shrink-0 text-right font-medium text-white/75 underline decoration-white/35 underline-offset-4 hover:text-white">Source: {imagery.source}</a>
+        <a href={imagery.source_url} target="_blank" rel="noreferrer" className="min-w-0 justify-self-end line-clamp-2 max-w-full break-words text-right font-medium leading-snug text-white/75 underline decoration-white/35 underline-offset-4 hover:text-white">Source: {imagery.source}</a>
       </footer>
     </section>
   );
