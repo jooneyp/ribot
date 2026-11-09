@@ -198,6 +198,42 @@
       "source_name": "Rowe et al., BMC Geriatrics 11:28 (2011)",
       "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3141319/",
       "quote": "Deaths most commonly occurred in unpopulated areas due to exposure and drowning. Those who died were found closer to the place last seen and took longer to find"
+    },
+    {
+      "id": "G16",
+      "value": "5.4 → 2.7 hours",
+      "label": "UK police scheme that records routines and known locations in advance (online Herbert Protocol, plus optional tags): first missing incidents after joining were found in 2.73 h vs 5.39 h before (846 people)",
+      "period": "Avon and Somerset Police data to June 2023 (published 2026)",
+      "source_name": "Morrissey, King, Au-Yeung, Hornberger — Innovation in Aging 10(3) igaf132 (2026)",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12962802/",
+      "quote": "Individuals with first missing incidents occurring after joining the scheme were found significantly faster (2.73 hours) than those with a first incident occurring before joining the scheme (5.39 hours)."
+    },
+    {
+      "id": "G17",
+      "value": "63%",
+      "label": "of lost Alzheimer's subjects were found in a creek or drainage and/or caught in briars or bushes",
+      "period": "Virginia SAR data 1986–1992",
+      "source_name": "Koester, Lost Alzheimer's subject behavioral profile (dbs-sar.com), from Koester & Stooksbury, Wilderness and Environmental Medicine 6:34-43 (1995)",
+      "source_url": "https://www.dbs-sar.com/SAR_Research/Wandering_Characteristics.htm",
+      "quote": "Subject usually found in a creek, or drainage and/or caught in briars/bushes (63%)"
+    },
+    {
+      "id": "G18",
+      "value": "“Traveled to a previous residence”",
+      "label": "Search records: of the found-in-a-house cases, half traveled to a previous residence; the one found after a long delay was in an uninhabited former residence",
+      "period": "Virginia SAR data 1986–1992",
+      "source_name": "Koester & Stooksbury, Wilderness and Environmental Medicine 6:34-43 (1995)",
+      "source_url": "https://www.dbs-sar.com/SAR_Research/JWM.pdf",
+      "quote": "In the 4 cases in which patients were in a house, 2 were hiding in their own house and 2 traveled to a previous residence."
+    },
+    {
+      "id": "K7",
+      "value": "“Small details like that are key clues.”",
+      "label": "Korean missing-person investigator: families should note what the person often says and does; a woman found near Sinchon had lived there when young",
+      "period": "2019",
+      "source_name": "Hankyoreh, Eunpyeong Police missing-person team, 2019-05-29",
+      "source_url": "https://www.hani.co.kr/arti/society/society_general/895733.html",
+      "quote": "가족들이 평소 치매노인이 자주 하던 말이나 행동 등을 유심히 봐두었다가 신고 뒤 경찰에 알려주면 수사에 큰 도움이 된다 … 젊었을 때 그 근처에서 살았다고 하더라고요. 그런 사소한 정보 하나하나가 수사에 매우 중요한 단서가 됩니다."
     }
   ]
 }
