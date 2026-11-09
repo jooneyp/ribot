@@ -18,6 +18,8 @@ type CaseWithSubtitles = ReplayCase & {
   report_words_en?: string | null;
 };
 const HOOK_ID = "hook-1962";
+const SEARCH_MANUAL_RADIUS_KM = 12.6;
+const SEARCH_MANUAL_ASSUMPTION = "95% of urban dementia searches end within 12.6 km (Koester, Lost Person Behavior, n=336)";
 const CASE_TITLES: Record<string, string> = { "hook-1962": "The question", "replay-srt": "The station", "replay-naju": "The hometown" };
 const IMAGERY_YEARS = 15;
 const IMAGERY_NEAR_KM = 15;
@@ -38,6 +40,20 @@ const message = (e: unknown, fallback: string) => {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const lines = (text: string) => text.split("\n").map((w) => w.trim()).filter(Boolean);
 const approxKm = (a: LatLng, b: LatLng) => Math.hypot((a.lat - b.lat) * 111, (a.lng - b.lng) * 88);
+const withCurrentSearchRing = (replay: ReplayRun): ReplayRun => {
+  if (!replay.plan || !replay.plan.circle.assumption.includes("3 km/h")) return replay;
+  return {
+    ...replay,
+    plan: {
+      ...replay.plan,
+      circle: {
+        ...replay.plan.circle,
+        radius_km: SEARCH_MANUAL_RADIUS_KM,
+        assumption: SEARCH_MANUAL_ASSUMPTION,
+      },
+    },
+  };
+};
 const pronouns = (sex: string | null | undefined) => sex === "M"
   ? { subject: "he", possessive: "his", contraction: "he's" }
   : sex === "F"
@@ -130,7 +146,7 @@ export default function Home() {
       if (tab === "replay") {
         const next = await api.replayRun(selectedId);
         if (!next) throw new Error(`No replay result for ${selectedId}.`);
-        setRun(next);
+        setRun(withCurrentSearchRing(next));
       } else {
         const words = lines(wordsText);
         if (!words.length) throw new Error("Enter at least one utterance.");

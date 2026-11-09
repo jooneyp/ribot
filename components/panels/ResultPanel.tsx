@@ -56,6 +56,7 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
   const { era, plan } = run;
   const closest = reveal?.candidates.find((c) => c.rank === reveal.nearest_candidate_rank) ?? null;
   const hasKnownTime = era.living_in.approx_year != null || era.living_in.age != null;
+  const isSrtCityLevel = run.case_id === "replay-srt" && plan?.last_seen.label.includes("(city-level)");
   return (
     <aside className="results" aria-live="polite">
       <div className="eyebrow">Era estimate</div>
@@ -116,7 +117,8 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
               {plan.candidates.length === 0 && <li><span>No candidate places found.</span></li>}
             </ol>
             <p className="assumption">
-              Last seen: {plan.last_seen.label} · radius search {plan.circle.radius_km} km ({plan.circle.assumption})
+              <span>Last seen: {plan.last_seen.label} · radius search {plan.circle.radius_km} km</span>
+              <span>{plan.circle.assumption}</span>
             </p>
           </section>
           {plan.send_first.length > 0 && (
@@ -151,9 +153,11 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
             Found <b>{km(reveal.home_to_found_km)}</b> from home ·{" "}
             <b>{closest ? km(closest.distance_to_found_km) : "unknown"}</b> from Ribot #{unknown(closest?.rank)}
           </p>
-          <p>
-            inside radius search: <b>{reveal.inside_circle == null ? "unknown" : reveal.inside_circle ? "yes" : "no"}</b>
-          </p>
+          {isSrtCityLevel ? (
+            <p><b>Home district unknown — city-level</b></p>
+          ) : (
+            <p>inside radius search: <b>{reveal.inside_circle == null ? "unknown" : reveal.inside_circle ? "yes" : "no"}</b></p>
+          )}
         </section>
       )}
     </aside>

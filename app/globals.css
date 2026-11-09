@@ -130,6 +130,8 @@ input { height: 44px; }
 .rank-list li small { color: var(--muted); font-size: 18px; }
 .rank-list abbr { text-decoration: underline dotted; cursor: help; color: var(--text); }
 .assumption { color: var(--muted); font-size: 18px; margin: 8px 0 0; line-height: 1.5; }
+.assumption span { display: block; }
+.assumption span + span { margin-top: 4px; color: var(--text); }
 .hub { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; }
 .hub-icon { font-size: 24px; line-height: 1; }
 .hub b, .hub small { display: block; }
