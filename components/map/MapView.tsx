@@ -6,7 +6,7 @@ import L, { type LatLngBoundsExpression, type LatLngExpression, type LatLngTuple
 import { useEffect, useMemo } from "react";
 import { Circle, CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
 
-import type { EraImagery, LatLng, MapViewProps } from "@/lib/contracts";
+import type { EraImagery, Hazard, LatLng, MapViewProps } from "@/lib/contracts";
 import { haversineKm } from "@/lib/metrics";
 
 const KOREA_BOUNDS: LatLngBoundsExpression = [[33, 125], [38.6, 129.8]];
@@ -23,6 +23,19 @@ function pinIcon({ kind, label, color, badge, muted = false, present = false }: 
     className: `ribot-pin-wrap${muted ? " is-muted" : ""}${kind === "found" ? " is-found" : ""}${badge ? " has-imagery" : ""}`,
     html: `<div class="ribot-pin ribot-pin--${kind}" style="--pin-color:${color ?? "#20201e"};--pin-size:${size}px"><span>${symbol}</span></div>${badge ? '<span class="ribot-imagery-badge">Then/Now</span>' : ""}`,
     iconSize: [iconWidth, size + (badge ? 18 : 0)], iconAnchor: [iconWidth / 2, size], tooltipAnchor: [0, -size + 4],
+  });
+}
+
+function hazardIcon(kind: Hazard["kind"], present: boolean) {
+  const size = present ? 46 : 40;
+  return L.divIcon({
+    className: `ribot-hazard-wrap ribot-hazard-wrap--${kind}`,
+    html: kind === "water"
+      ? '<div class="ribot-hazard ribot-hazard--water" aria-hidden="true">●</div>'
+      : '<div class="ribot-hazard ribot-hazard--hill" aria-hidden="true">▲</div>',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    tooltipAnchor: [size / 2 + 4, 0],
   });
 }
 
@@ -60,13 +73,16 @@ function FitBounds({ points }: { points: LatLngExpression[] }) {
   return null;
 }
 
-function RadiusCircle({ center, radiusKm, label }: { center: LatLng; radiusKm: number; label: string }) {
-  const style = { color: "#e2e3de", fillColor: "#a8aaa4", fillOpacity: 0.38, opacity: 1, weight: 5 };
+function RadiusCircle({ center, radiusKm, label, secondary = false }: { center: LatLng; radiusKm: number; label: string; secondary?: boolean }) {
+  const style = secondary
+    ? { color: "#d9ff62", fillColor: "transparent", fillOpacity: 0, opacity: 0.95, weight: 3, dashArray: "7 9" }
+    : { color: "#e2e3de", fillColor: "#a8aaa4", fillOpacity: 0.38, opacity: 1, weight: 5 };
   const latitudeRadius = radiusKm / 111.32;
+  const labelLatitude = center.lat + (secondary ? -latitudeRadius : latitudeRadius);
   return <>
     <Circle center={[center.lat, center.lng]} radius={radiusKm * 1000} pathOptions={style} interactive={false} />
-    <CircleMarker center={[center.lat - latitudeRadius, center.lng]} radius={0} pathOptions={{ opacity: 0, fillOpacity: 0 }} interactive={false}>
-      <Tooltip permanent direction="bottom" offset={[0, 8]} className="ribot-circle-label">{label} · {distanceLabel(radiusKm)}</Tooltip>
+    <CircleMarker center={[labelLatitude, center.lng]} radius={0} pathOptions={{ opacity: 0, fillOpacity: 0 }} interactive={false}>
+      <Tooltip permanent direction={secondary ? "bottom" : "top"} offset={[0, secondary ? 42 : -8]} className={`ribot-circle-label${secondary ? " ribot-hazard-ring-label" : ""}`}>{label} · {distanceLabel(radiusKm)}</Tooltip>
     </CircleMarker>
   </>;
 }
@@ -90,7 +106,13 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
       points.push([plan.last_seen.geo.lat, plan.last_seen.geo.lng]);
       points.push(...plan.candidates.map((candidate) => [candidate.geo.lat, candidate.geo.lng] as LatLngTuple));
       points.push(...plan.send_first.filter((hub) => hub.geo).map((hub) => [hub.geo!.lat, hub.geo!.lng] as LatLngTuple));
-      const latitudeRadius = plan.circle.radius_km / 111.32;
+      points.push(...(plan.hazards ?? []).map((hazard) => [hazard.geo.lat, hazard.geo.lng] as LatLngTuple));
+      // Candidate-less plans focus the camera on the actionable 75% search ring,
+      // while plans with destinations retain the wider 95% overview.
+      const fitRadiusKm = plan.candidates.length === 0 && plan.hazard_ring_km
+        ? plan.hazard_ring_km
+        : plan.circle.radius_km;
+      const latitudeRadius = fitRadiusKm / 111.32;
       const longitudeRadius = latitudeRadius / Math.max(0.1, Math.cos(plan.circle.center.lat * Math.PI / 180));
       points.push(
         [plan.circle.center.lat + latitudeRadius, plan.circle.center.lng + longitudeRadius],
@@ -108,6 +130,7 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
 
   const hubs = plan?.send_first.filter((hub) => hub.geo) ?? [];
   const candidates = plan?.candidates ?? [];
+  const hazards = plan?.hazards ?? [];
   const eras = profile?.eras ?? [];
 
   return (
@@ -115,14 +138,17 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
       <MapContainer bounds={KOREA_BOUNDS} boundsOptions={{ padding: [28, 28] }} zoomControl={!present} attributionControl={false} className="h-full w-full">
         <TileLayer attribution='&copy; OpenStreetMap contributors &copy; CARTO' url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
         <FitBounds points={bounds} />
-        {plan && <RadiusCircle center={plan.circle.center} radiusKm={plan.circle.radius_km} label={plan.circle.label} />}
+        {plan && <RadiusCircle center={plan.circle.center} radiusKm={plan.circle.radius_km} label={plan.hazard_ring_km ? "95% ring" : plan.circle.label} />}
+        {plan?.hazard_ring_km && <RadiusCircle center={plan.circle.center} radiusKm={plan.hazard_ring_km} label="75% ring" secondary />}
         {route && <Polyline positions={route} pathOptions={{ color: "#f0f1eb", dashArray: "10 12", opacity: 0.9, weight: present ? 4 : 3 }}><Tooltip permanent direction="center" className="ribot-distance-label">{distanceLabel(routeDistance!)}</Tooltip></Polyline>}
         {reveal && nearestCandidate && <Polyline positions={[[reveal.found.geo.lat, reveal.found.geo.lng], [nearestCandidate.geo.lat, nearestCandidate.geo.lng]]} pathOptions={{ className: "ribot-reveal-line", color: "#ff7058", weight: 2, opacity: 0.9 }}><Tooltip permanent direction="right" offset={[78, 0]} className="ribot-reveal-distance-label">{distanceLabel(nearestDistance!)}</Tooltip></Polyline>}
         {plan && <Marker position={[plan.last_seen.geo.lat, plan.last_seen.geo.lng]} icon={pinIcon({ kind: "home", label: "", present })} zIndexOffset={500}><Tooltip permanent direction="left" className="ribot-pin-label ribot-last-seen-label"><strong>Last seen</strong> · {plan.last_seen.label}</Tooltip></Marker>}
         {candidates.map((candidate) => {
           const matched = imageryFor(candidate.geo, imagery);
-          return <Marker key={`candidate-${candidate.rank}-${candidate.place_id}`} position={[candidate.geo.lat, candidate.geo.lng]} icon={pinIcon({ kind: "candidate", label: String(candidate.rank), badge: !!matched, present })} eventHandlers={matched && onSelectImagery ? { click: () => onSelectImagery(matched.id) } : undefined} zIndexOffset={300 - candidate.rank}><Tooltip permanent={candidate.rank <= 3} direction="right" className={`ribot-pin-label${candidate.rank === 1 ? " ribot-rank-one-label" : ""}`}><strong>#{candidate.rank} {candidate.name}</strong><br />{distanceLabel(candidate.distance_km_from_last_seen)} from last seen</Tooltip></Marker>;
+          const color = candidate.layer === "routine" ? "#0f9f91" : candidate.layer === "past" ? "#f05239" : undefined;
+          return <Marker key={`candidate-${candidate.rank}-${candidate.place_id}`} position={[candidate.geo.lat, candidate.geo.lng]} icon={pinIcon({ kind: "candidate", label: String(candidate.rank), color, badge: !!matched, present })} eventHandlers={matched && onSelectImagery ? { click: () => onSelectImagery(matched.id) } : undefined} zIndexOffset={300 - candidate.rank}><Tooltip permanent={candidate.rank <= 3} direction="right" className={`ribot-pin-label${candidate.rank === 1 ? " ribot-rank-one-label" : ""}`}><strong>#{candidate.rank} {candidate.name}</strong><br />{distanceLabel(candidate.distance_km_from_last_seen)} from last seen</Tooltip></Marker>;
         })}
+        {hazards.map((hazard, index) => <Marker key={`hazard-${hazard.kind}-${hazard.name}-${index}`} position={[hazard.geo.lat, hazard.geo.lng]} icon={hazardIcon(hazard.kind, present)} zIndexOffset={350 - index}><Tooltip permanent direction={index % 2 === 0 ? "right" : "left"} offset={[0, (index - (hazards.length - 1) / 2) * 28]} className={`ribot-hazard-label ribot-hazard-label--${hazard.kind}`}><strong>{hazard.name}</strong> · {distanceLabel(hazard.distance_km)}</Tooltip></Marker>)}
         {hubs.map((hub, index) => <Marker key={`hub-${hub.name}-${index}`} position={[hub.geo!.lat, hub.geo!.lng]} icon={pinIcon({ kind: "hub", label: "", present })} zIndexOffset={400}><Tooltip direction="right" className="ribot-pin-label ribot-hub-label"><strong>Send first: {hub.name}</strong><br />{hub.line ? `${hub.line} · ` : ""}{hub.label}</Tooltip></Marker>)}
         {!plan && profilePlaces.map(({ era, eraIndex, place, geo, visible }) => {
           const matched = imageryFor(geo, imagery);
@@ -154,6 +180,12 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
         .ribot-pin--home > span, .ribot-pin--hub > span, .ribot-pin--found > span { transform: none; }
         .ribot-pin--hub { font-size: 22px; background: #fff; }
         .ribot-pin--found { transform: rotate(0); border-radius: 50%; background: #f05239; font-size: 25px; }
+        .ribot-hazard-wrap { background: transparent; border: 0; }
+        .ribot-hazard { box-sizing: border-box; display: grid; place-items: center; width: 40px; height: 40px; filter: drop-shadow(0 4px 7px rgba(0,0,0,.65)); font-weight: 900; line-height: 1; }
+        .ribot-map.is-present .ribot-hazard { width: 46px; height: 46px; }
+        .ribot-hazard--water { color: #e8fbff; background: #168bd2; border: 3px solid #dff8ff; border-radius: 50% 50% 50% 8px; font-size: 13px; transform: rotate(-45deg); }
+        .ribot-hazard--water::first-letter { transform: rotate(45deg); }
+        .ribot-hazard--hill { color: #6c4b24; font-size: 41px; -webkit-text-stroke: 3px #c8e26a; paint-order: stroke fill; }
         .ribot-pin-wrap.is-found .ribot-pin { animation: ribot-pin-pop .55s cubic-bezier(.2,1.55,.45,1) both; }
         .ribot-imagery-badge { position: absolute; top: 45px; left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 4px 8px; color: #11130f; background: #d9ff62; border-radius: 999px; box-shadow: 0 3px 10px rgba(0,0,0,.55); font-size: 12px; font-weight: 850; letter-spacing: .02em; cursor: pointer; }
         .ribot-map.is-present .ribot-imagery-badge { top: 51px; font-size: 14px; }
@@ -161,6 +193,10 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
         .ribot-map.is-present .leaflet-tooltip { font-size: 22px; padding: 9px 12px; }
         .ribot-map .leaflet-tooltip::before { display: none; }
         .ribot-map .ribot-circle-label { color: #f0f1ec; background: rgba(70,72,69,.94); font-size: 16px; font-weight: 750; }
+        .ribot-map .ribot-hazard-ring-label { color: #18200c; background: #d9ff62; border-color: #efffbd; font-size: 20px; font-weight: 900; }
+        .ribot-map .ribot-hazard-label { font-size: 20px; border-width: 2px; }
+        .ribot-map .ribot-hazard-label--water { border-color: #43bdf5; }
+        .ribot-map .ribot-hazard-label--hill { border-color: #b8d65b; }
         .ribot-map .ribot-distance-label, .ribot-map .ribot-reveal-distance-label { color: #11130f; background: #f5f5ef; border-color: #fff; font-size: 24px; font-weight: 900; }
         .ribot-map .ribot-reveal-distance-label { color: #fff; background: #c83f2a; }
         .ribot-map .ribot-rank-one-label { font-size: 24px; border-color: rgba(217,255,98,.8); }
