@@ -41,6 +41,9 @@ Open [http://localhost:3000](http://localhost:3000). Add `?mock=1` for fixture-b
 
 ## Sources
 
+- Public CCTV locations: 전국CCTV표준데이터 (data.go.kr 15013094), Seoul rows, downloaded 2026-11-09 — https://www.data.go.kr/data/15013094/standard.do
+- Walking routes: OSRM foot profile (routing.openstreetmap.de), OpenStreetMap contributors
+
 ### Numbers and quoted evidence
 
 - **K1 — 16,586:** [Newsis, Korean National Police Agency data](https://mobile.newsis.com/view/NISX20260902_0003773655)

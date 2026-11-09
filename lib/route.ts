@@ -51,6 +51,7 @@ export function walkPrefix(coords: [number, number][], km: number): { walked: [n
   return { walked, point: { lat: last[0], lng: last[1] } };
 }
 
+// data/cctv_seoul.json: Seoul rows of 전국CCTV표준데이터 (data.go.kr 15013094), downloaded 2026-11-09.
 let cctvAll: Cctv[] | null = null;
 function loadCctv(): Cctv[] {
   if (cctvAll) return cctvAll;
