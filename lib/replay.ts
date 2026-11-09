@@ -87,6 +87,6 @@ export async function runReplay(caseId: string): Promise<ReplayRun> {
     era,
     last_seen: { label: `${city} (city-level)`, query: lastSeenQuery },
     elapsed_hours: 1,
-  }, "demo elapsed time 1 h");
+  });
   return { case_id: entry.id, era, profile, plan };
 }

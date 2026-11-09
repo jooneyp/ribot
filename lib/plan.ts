@@ -1,7 +1,7 @@
 import type { Candidate, Era, FinderCard, GeoResult, Hub, Place, Plan, PlanInput } from "./contracts";
 import { geocode } from "./geo";
 import { proposeHubs } from "./llm";
-import { circleRadiusKm, haversineKm, round1 } from "./metrics";
+import { haversineKm, round1 } from "./metrics";
 
 function overlaps(era: Era, range: [number, number] | null): boolean {
   if (!range || era.start_year === null || era.end_year === null) return true;
@@ -88,7 +88,11 @@ async function placeGeo(place: Place): Promise<GeoResult | null> {
   return place.geo ?? geocode(place.modern_query);
 }
 
-export async function buildPlan(input: PlanInput, assumption = "assumed 3 km/h walk, capped at 5 km"): Promise<Plan> {
+// Search-manual baseline: 95% of urban dementia subjects were found within 12.6 km of the last-seen point (Koester, Lost Person Behavior, n=336).
+const MANUAL_URBAN_95_KM = 12.6;
+const MANUAL_RING = "95% of urban dementia searches end within 12.6 km (Koester, Lost Person Behavior, n=336)";
+
+export async function buildPlan(input: PlanInput, assumption = MANUAL_RING): Promise<Plan> {
   const lastSeenGeo = await geocode(input.last_seen.query);
   if (!lastSeenGeo) throw new Error(`Could not geocode last seen place: ${input.last_seen.query}`);
 
@@ -140,7 +144,7 @@ export async function buildPlan(input: PlanInput, assumption = "assumed 3 km/h w
     elapsed_hours: input.elapsed_hours,
     circle: {
       center: { lat: lastSeenGeo.lat, lng: lastSeenGeo.lng },
-      radius_km: circleRadiusKm(input.elapsed_hours),
+      radius_km: MANUAL_URBAN_95_KM,
       label: "radius search",
       assumption,
     },
