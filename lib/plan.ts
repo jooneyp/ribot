@@ -1,6 +1,6 @@
-import type { Candidate, Era, GeoResult, Hub, Place, Plan, PlanInput } from "./contracts";
+import type { Candidate, Era, FinderCard, GeoResult, Hub, Place, Plan, PlanInput } from "./contracts";
 import { geocode } from "./geo";
-import { finderCard, proposeHubs } from "./llm";
+import { proposeHubs } from "./llm";
 import { circleRadiusKm, haversineKm, round1 } from "./metrics";
 
 function overlaps(era: Era, range: [number, number] | null): boolean {
@@ -10,9 +10,28 @@ function overlaps(era: Era, range: [number, number] | null): boolean {
 
 type SelectedPlace = { place: Place; era: Era | null; eraMatch: number; isHometown: boolean };
 
-const round2 = (x: number) => Math.round(x * 100) / 100;
-// A proposed departure hub geocoded farther than this from last seen is a wrong-city hit: keep the name, drop the pin.
-const HUB_MAX_KM = 30;
+const FINDER_CARDS: Record<PlanInput["era"]["intent"], FinderCard> = {
+  going_home: {
+    ko: ["따지지 마세요.", "\"고향 가세요? 같이 가요.\"", "천천히, 옆에서 걸어 주세요."],
+    en: ["Don't argue.", "\"Going home? Let's go together.\"", "Walk slowly, beside them."],
+  },
+  going_to_work: {
+    ko: ["따지지 마세요.", "\"일하러 가세요? 같이 가요.\"", "천천히, 옆에서 걸어 주세요."],
+    en: ["Don't argue.", "\"Going to work? Let's go together.\"", "Walk slowly, beside them."],
+  },
+  looking_for_someone: {
+    ko: ["따지지 마세요.", "\"누구를 찾으세요? 같이 찾아봐요.\"", "천천히, 옆에서 걸어 주세요."],
+    en: ["Don't argue.", "\"Who are you looking for? Let's look together.\"", "Walk slowly, beside them."],
+  },
+  other: {
+    ko: ["따지지 마세요.", "지금의 이야기를 차분히 들어 주세요.", "천천히, 옆에서 걸어 주세요."],
+    en: ["Don't argue.", "Listen calmly to their present reality.", "Walk slowly, beside them."],
+  },
+  unknown: {
+    ko: ["따지지 마세요.", "안전한 곳에서 차분히 이야기를 들어 주세요.", "천천히, 옆에서 걸어 주세요."],
+    en: ["Don't argue.", "Listen calmly in a safe place.", "Walk slowly, beside them."],
+  },
+};
 
 function whyText(selected: SelectedPlace, range: [number, number] | null, km: number): string {
   const what = selected.isHometown ? "Hometown (family profile)" : `${selected.era?.label ?? "Profile"} place`;
@@ -75,12 +94,12 @@ export async function buildPlan(input: PlanInput, assumption = "assumed 3 km/h w
     const geo = await placeGeo(place);
     if (!geo) return null;
     const distance = haversineKm(lastSeenGeo, geo);
-    const reachability = round2(distance <= 5
+    const reachability = distance <= 5
       ? 1
       : input.era.intent === "going_home" || input.era.intent === "going_to_work"
         ? 0.8
-        : Math.max(0.2, 1 - distance / 300));
-    const score = round2(eraMatch * reachability * place.confidence);
+        : Math.max(0.2, 1 - distance / 300);
+    const score = eraMatch * reachability * place.confidence;
     return {
       rank: 1,
       place_id: place.id,
@@ -106,7 +125,7 @@ export async function buildPlan(input: PlanInput, assumption = "assumed 3 km/h w
         name: proposal.name,
         kind: proposal.kind,
         line: proposal.line,
-        geo: geo && haversineKm(lastSeenGeo, geo) <= HUB_MAX_KM ? geo : null,
+        geo,
         label: "proposed, verify" as const,
       };
     }));
@@ -123,6 +142,6 @@ export async function buildPlan(input: PlanInput, assumption = "assumed 3 km/h w
     },
     candidates,
     send_first: sendFirst,
-    finder_card: await finderCard({ era: input.era, profile: input.profile }),
+    finder_card: FINDER_CARDS[input.era.intent],
   };
 }
