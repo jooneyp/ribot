@@ -81,10 +81,10 @@ function FitBounds({ points, maxZoom = 13, compact = false, enabled = true }: { 
 
 function ZoomTiles() {
   const map = useMap();
-  const [satellite, setSatellite] = useState(map.getZoom() >= 16);
+  const [satellite, setSatellite] = useState(map.getZoom() >= 17);
   useMapEvents({
-    zoom: () => setSatellite(map.getZoom() >= 16),
-    zoomend: () => setSatellite(map.getZoom() >= 16),
+    zoom: () => setSatellite(map.getZoom() >= 17),
+    zoomend: () => setSatellite(map.getZoom() >= 17),
   });
   return <>
     <TileLayer opacity={satellite ? 0 : 1} attribution="Esri, HERE, Garmin, &copy; OpenStreetMap contributors" url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}" maxNativeZoom={16} maxZoom={19} />
@@ -143,7 +143,7 @@ function CameraTour({ enabled, points, lastSeen, routes }: {
       map.flyToBounds(overview, { padding: [100, 100], maxZoom: 13, duration: 2 });
       await wait(2000); if (cancelled) return;
       await stop("overview", 2500);
-      map.flyTo(lastSeen, 17, { duration: 2 });
+      map.flyTo(lastSeen, 16, { duration: 2 });
       await wait(2000); if (cancelled) return;
       await stop("last_seen", 1200);
       for (const [index, point] of follow.entries()) {
@@ -153,7 +153,7 @@ function CameraTour({ enabled, points, lastSeen, routes }: {
         await stop(`follow_${index}`, 1200);
       }
       if (cancelled) return;
-      map.flyTo([route.reach.point.lat, route.reach.point.lng], 18, { duration: 2 });
+      map.flyTo([route.reach.point.lat, route.reach.point.lng], 16, { duration: 2 });
       await wait(2000);
       await stop("reach", 1500);
       if (cancelled) return;
@@ -414,7 +414,7 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
           const matched = imageryFor(geo, imagery);
           return <Marker key={`${era.id}-${place.id}`} position={[geo.lat, geo.lng]} opacity={visible ? 1 : 0.22} icon={pinIcon({ kind: "place", label: String(eraIndex + 1), color: ERA_COLORS[eraIndex % ERA_COLORS.length], badge: !!matched, muted: !visible, present })} eventHandlers={matched && onSelectImagery ? { click: () => onSelectImagery(matched.id) } : undefined} zIndexOffset={visible ? 200 : 0}><Tooltip key={String(visible)} permanent={visible} direction="right" className="ribot-pin-label"><strong>{place.name_then}</strong><br />{era.label}{yearRange(era.start_year, era.end_year) ? ` · ${yearRange(era.start_year, era.end_year)}` : ""}</Tooltip></Marker>;
         })}
-        {reveal && <Marker key={`found-${reveal.case_id}`} position={[reveal.found.geo.lat, reveal.found.geo.lng]} icon={pinIcon({ kind: "found", label: "", present })} zIndexOffset={1000}><Tooltip permanent direction="right" offset={[10, -14]} className="ribot-found-label"><strong>Found</strong> · {reveal.found.label}</Tooltip></Marker>}
+        {reveal && <Marker key={`found-${reveal.case_id}`} position={[reveal.found.geo.lat, reveal.found.geo.lng]} icon={pinIcon({ kind: "found", label: "", present })} zIndexOffset={1000}><Tooltip permanent direction="bottom" offset={[0, 22]} className="ribot-found-label"><strong>Found</strong> · {reveal.found.label}</Tooltip></Marker>}
       </MapContainer>
       {!plan && eras.length > 0 && <ol className="ribot-era-legend">
         {eras.map((era, eraIndex) => <li key={era.id} className={eraOverlapsDecade(era.start_year, era.end_year, decade) ? "" : "is-muted"}>
