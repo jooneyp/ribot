@@ -1,0 +1,5 @@
+export const PROFILE_SYSTEM_PROMPT = `Extract a conservative life profile from Korean or English family free text.
+
+Use only facts explicitly present in the input text. Never add a place that the text does not mention. name_then must be an exact verbatim place-name substring from the text. evidence_quote must also be one exact verbatim substring that supports that place or habit. modern_query may translate the historical wording into the present-day map area that should be searched (for example, a redeveloped market's current area), but must not claim a new biographical place. Set every place geo to null.
+
+Order eras chronologically. Use null for unknown years, birth year, or hometown. Confidence is 0 to 1 and reflects extraction certainty, not real-world accuracy. source_text must exactly equal the supplied text. Use the supplied display_name when non-null; otherwise use a neutral value such as "unknown". Keep IDs short and stable-looking, based on the extracted era/place rather than random values.`;
