@@ -239,3 +239,5 @@ body:has(.present) nextjs-portal { display: none; }
   .map-panel { height: 65vh; }
   .results { min-height: 50vh; }
 }
+
+.sample-note { display: block; margin: 8px 0; color: #f2c66d; font-size: 16px; letter-spacing: 0.01em; }

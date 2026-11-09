@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import sampleFamily from "@/data/samples/family_sample.json";
 import Recorder from "@/components/Recorder";
 import ThenNow from "@/components/map/ThenNow";
 import HookStage from "@/components/panels/HookStage";
@@ -109,6 +110,8 @@ export default function Home() {
   const [wordsText, setWordsText] = useState("");
   const [ageBand, setAgeBand] = useState("");
   const [profileText, setProfileText] = useState("");
+  const [lastSeen, setLastSeen] = useState("");
+  const [sampleLoaded, setSampleLoaded] = useState(false);
   const [profile, setProfile] = useState<LifeProfile | null>(null);
   const [decade, setDecade] = useState<number | null>(null);
   const [openImagery, setOpenImagery] = useState<string | null>(null);
@@ -179,14 +182,22 @@ export default function Home() {
         const words = lines(wordsText);
         if (!words.length) throw new Error("Enter at least one utterance.");
         const era = await api.era({ words, report_words: null, age_band: ageBand.trim() || null, now_year: new Date().getFullYear() });
-        setRun({ case_id: "her-words", era, profile: null, plan: null });
+        // With a family profile on file, her words drive the full three-layer plan from where she was last seen.
+        const where = lastSeen.trim();
+        if (profile && where) {
+          setBusy("Building the search plan…");
+          const plan = await api.plan({ profile, era, last_seen: { label: `${where} (last seen)`, query: where }, elapsed_hours: 1 });
+          setRun({ case_id: "her-words", era, profile, plan });
+        } else {
+          setRun({ case_id: "her-words", era, profile: null, plan: null });
+        }
       }
     } catch (e) {
       setError(message(e, "Something went wrong."));
     } finally {
       setBusy(null);
     }
-  }, [ageBand, resetRun, selectedId, tab, wordsText]);
+  }, [ageBand, lastSeen, profile, resetRun, selectedId, tab, wordsText]);
 
   const buildProfile = useCallback(async () => {
     if (!profileText.trim()) { setError("Paste the family's words or choose an audio file."); return; }
@@ -386,6 +397,11 @@ export default function Home() {
                 Age band
                 <input value={ageBand} onChange={(e) => setAgeBand(e.target.value)} placeholder="e.g. 80s" />
               </label>
+              <label>
+                Last seen {profile ? "" : "(build the family profile first for a full plan)"}
+                <input value={lastSeen} onChange={(e) => setLastSeen(e.target.value)} placeholder="e.g. 서울특별시 은평구 응암동" lang="ko" />
+              </label>
+              {sampleLoaded && <small className="sample-note">{sampleFamily.label_en}</small>}
               <button className="primary" disabled={!!busy} onClick={() => void runEra()}>
                 Where is she? <span>→</span>
               </button>
@@ -401,6 +417,20 @@ export default function Home() {
                 <textarea value={profileText} onChange={(e) => setProfileText(e.target.value)} placeholder={"고향은… 열일곱에 서울 올라와서…\n할아버지랑은 창경원에서 처음 만나셨대요.\n\n[주민등록초본 주소 변동 사항 붙여넣기]\n서울특별시 ○○구 ○○동 …  1976-05-10 전입"} rows={9} lang="ko" />
               </label>
               <Recorder onText={setProfileText} onError={setError} />
+              <button
+                className="secondary"
+                disabled={!!busy}
+                onClick={() => {
+                  setProfileText(sampleFamily.profile_text);
+                  setWordsText(sampleFamily.her_words.join("\n"));
+                  setAgeBand(sampleFamily.age_band);
+                  setLastSeen(sampleFamily.last_seen);
+                  setSampleLoaded(true);
+                }}
+              >
+                Load sample family (illustrative, not a real person)
+              </button>
+              {sampleLoaded && <small className="sample-note">{sampleFamily.label_en}</small>}
               <button className="primary" disabled={!!busy} onClick={() => void buildProfile()}>
                 Build profile <span>→</span>
               </button>

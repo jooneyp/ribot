@@ -136,7 +136,12 @@ export async function buildPlan(input: PlanInput, assumption = MANUAL_RING): Pro
     };
   }))).filter((candidate): candidate is Candidate => candidate !== null);
 
-  candidates.sort((a, b) => b.score - a.score || a.distance_km_from_last_seen - b.distance_km_from_last_seen);
+  // Tie-break: a place she named herself ("평화시장 가는 버스가…") goes first among equal scores.
+  const heard = input.era.evidence.map((e) => e.quote).join(" ");
+  const GENERIC = new Set(["서울", "서울특별시", "시장", "집", "동네"]);
+  const named = (c: Candidate) => c.name.split(/\s+/).some((t) => t.length >= 2 && !GENERIC.has(t) && heard.includes(t));
+  for (const c of candidates) if (named(c)) c.why = `She named it · ${c.why}`;
+  candidates.sort((a, b) => b.score - a.score || Number(named(b)) - Number(named(a)) || a.distance_km_from_last_seen - b.distance_km_from_last_seen);
   candidates.forEach((candidate, index) => { candidate.rank = index + 1; });
 
   let sendFirst: Hub[] = [];
