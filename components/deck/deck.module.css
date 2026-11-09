@@ -146,11 +146,13 @@
 .closeLead span { color: var(--accent); display: block; font-weight: 700; margin-top: 0.35em; }
 .closing h2 { color: var(--accent); font-size: clamp(78px, 11vw, 211px); line-height: 0.75; }
 .tagline { font-size: clamp(25px, 3vw, 58px); font-weight: 700; margin: 2.5% 0; }
-.repo { color: #f5f3ed; font-family: var(--font-geist-mono), monospace; font-size: clamp(15px, 1.45vw, 28px); }
+.repo { color: #f5f3ed; font-family: var(--font-mono, var(--font-geist-mono, ui-monospace)), monospace; font-size: clamp(15px, 1.45vw, 28px); }
 .nameNote { color: #777570; font-size: clamp(12px, 0.95vw, 18px); margin: 1.5% 0 0; }
 
-.sources { bottom: 3.2%; display: flex; flex-wrap: wrap; gap: 0.25em 1.5em; left: 7.3%; max-width: 84%; position: absolute; }
+/* Reset the app-wide `footer` rule from app/globals.css so it can't restyle the deck. */
+.sources { border: 0; bottom: 3.2%; display: flex; flex-wrap: wrap; gap: 0.25em 1.5em; justify-content: flex-start; left: 7.3%; max-width: 84%; padding: 0; position: absolute; }
+.closing .sources { justify-content: center; max-width: none; right: 7.3%; }
 .sources a { color: #64625e; font-size: clamp(8px, 0.65vw, 12px); line-height: 1.25; text-decoration: none; }
-.slideNumber { bottom: max(2.2vh, 12px); color: #6d6b66; font-family: var(--font-geist-mono), monospace; font-size: clamp(10px, 0.75vw, 14px); position: fixed; right: max(2.2vw, 16px); z-index: 2; }
+.slideNumber { bottom: max(2.2vh, 12px); color: #6d6b66; font-family: var(--font-mono, var(--font-geist-mono, ui-monospace)), monospace; font-size: clamp(10px, 0.75vw, 14px); position: fixed; right: max(2.2vw, 16px); z-index: 2; }
 
 @media (max-aspect-ratio: 4 / 3) { .sources { display: none; } }
