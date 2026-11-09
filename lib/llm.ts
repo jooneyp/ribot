@@ -1,5 +1,7 @@
+import { createHash } from "node:crypto";
+
 import OpenAI, { toFile } from "openai";
-import { zodTextFormat } from "openai/helpers/zod";
+import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
 import {
@@ -17,70 +19,78 @@ import { isGrounded, keepGrounded } from "./quoteGuard";
 
 export type HubProposal = { name: string; kind: z.infer<typeof HubKind>; line: string | null; query: string };
 
-// OpenAI strict schemas do not support JSON Schema's tuple-form `items` emitted by z.tuple.
-// Accept an exactly two-item array from the model, then validate it against the frozen contract below.
+// Strict JSON Schema does not accept the tuple-shaped schema emitted for z.tuple.
+// The model emits a two-item array; the frozen contract validates the final value.
 const EraEstimateOutput = EraEstimate.extend({
   living_in: EraEstimate.shape.living_in.extend({
     year_range: z.array(z.number().int()).length(2).nullable(),
   }),
 });
 
+const HubProposals = z.object({
+  hubs: z
+    .array(
+      z.object({
+        name: z.string(),
+        kind: HubKind,
+        line: z.string().nullable(),
+        query: z.string(),
+      }),
+    )
+    .max(3),
+});
+
+const Transcription = z.object({ text: z.string() });
+const resultCache = new Map<string, unknown>();
+let openai: OpenAI | undefined;
+
 /** Her words → which era of her life she is living in. Evidence quotes must pass quoteGuard against the input. */
 export async function estimateEra(input: EraInput): Promise<EraEstimate> {
-  const response = await client().responses.parse({
-    model: textModel(),
-    instructions: ERA_SYSTEM_PROMPT,
-    input: JSON.stringify(input),
-    text: { format: zodTextFormat(EraEstimateOutput, "era_estimate") },
-  });
-  if (!response.output_parsed) throw new Error("The era model returned no structured output");
+  return cached("era", input, async () => {
+    const output = await structuredCall(ERA_SYSTEM_PROMPT, input, EraEstimateOutput, "era_estimate");
+    const source = [...input.words, input.report_words].filter((value): value is string => Boolean(value)).join("\n");
 
-  const source = [...input.words, input.report_words].filter((value): value is string => Boolean(value)).join("\n");
-  return EraEstimate.parse({
-    ...response.output_parsed,
-    evidence: keepGrounded(response.output_parsed.evidence, source),
+    return EraEstimate.parse({
+      ...output,
+      evidence: keepGrounded(output.evidence, source),
+    });
   });
 }
 
 /** Family free text (typed or transcribed) → LifeProfile with geo = null. Quotes must pass quoteGuard. */
 export async function extractProfile(input: ProfileInput): Promise<LifeProfile> {
-  const response = await client().responses.parse({
-    model: textModel(),
-    instructions: PROFILE_SYSTEM_PROMPT,
-    input: JSON.stringify(input),
-    text: { format: zodTextFormat(LifeProfile, "life_profile") },
-  });
-  if (!response.output_parsed) throw new Error("The profile model returned no structured output");
+  return cached("profile", input, async () => {
+    const output = await structuredCall(PROFILE_SYSTEM_PROMPT, input, LifeProfile, "life_profile");
+    const eras = output.eras
+      .map((era) => ({
+        ...era,
+        places: era.places.filter(
+          (place) => isGrounded(place.evidence_quote, input.text) && isGrounded(place.name_then, input.text),
+        ),
+      }))
+      .sort((a, b) => (a.start_year ?? Number.POSITIVE_INFINITY) - (b.start_year ?? Number.POSITIVE_INFINITY));
+    const hometown = output.person.hometown;
 
-  const parsed = response.output_parsed;
-  const eras = parsed.eras
-    .map((era) => ({
-      ...era,
-      places: era.places.filter(
-        (place) => isGrounded(place.evidence_quote, input.text) && isGrounded(place.name_then, input.text),
-      ),
-    }))
-    .sort((a, b) => (a.start_year ?? Number.POSITIVE_INFINITY) - (b.start_year ?? Number.POSITIVE_INFINITY));
-
-  return LifeProfile.parse({
-    ...parsed,
-    person: { ...parsed.person, display_name: input.display_name ?? parsed.person.display_name },
-    eras,
-    habits: parsed.habits.filter((habit) => isGrounded(habit.evidence_quote, input.text)),
-    source_text: input.text,
+    return LifeProfile.parse({
+      ...output,
+      person: {
+        ...output.person,
+        display_name: input.display_name ?? "unknown",
+        hometown: hometown && isGrounded(hometown, input.text) ? hometown : null,
+      },
+      eras,
+      habits: output.habits.filter((habit) => isGrounded(habit.evidence_quote, input.text)),
+      source_text: input.text,
+    });
   });
 }
 
 /** Departure hubs from the last-seen city toward a far destination. Labelled "proposed, verify" by the caller. */
 export async function proposeHubs(input: { from_label: string; to_label: string }): Promise<HubProposal[]> {
-  const response = await client().responses.parse({
-    model: textModel(),
-    instructions: HUBS_SYSTEM_PROMPT,
-    input: JSON.stringify(input),
-    text: { format: zodTextFormat(HubProposals, "hub_proposals") },
+  return cached("hubs", input, async () => {
+    const output = await structuredCall(HUBS_SYSTEM_PROMPT, input, HubProposals, "hub_proposals");
+    return output.hubs;
   });
-  if (!response.output_parsed) throw new Error("The hub model returned no structured output");
-  return response.output_parsed.hubs;
 }
 
 /** 3 short Korean lines + English for whoever finds her: don't argue, join her reality, guide gently. */
@@ -99,39 +109,73 @@ export async function finderCard(input: { era: EraEstimate; profile: LifeProfile
   };
 }
 
-/** Audio → text (Korean). */
+/** Audio → text (Korean), using only the local Whisper-compatible server. */
 export async function transcribe(audio: Blob, filename: string): Promise<string> {
-  const result = await client().audio.transcriptions.create({
-    file: await toFile(audio, filename),
-    model: process.env.RIBOT_STT_MODEL || "gpt-4o-transcribe",
-    language: "ko",
-  });
-  return result.text;
+  const base = process.env.RIBOT_STT_BASE_URL || "http://127.0.0.1:8200/v1";
+  const endpoint = base.endsWith("/audio/transcriptions")
+    ? base
+    : `${base.replace(/\/$/, "")}/audio/transcriptions`;
+  const form = new FormData();
+  form.set("file", await toFile(audio, filename));
+  form.set("model", process.env.RIBOT_STT_MODEL || "large-v3-turbo");
+  form.set("language", "ko");
+  form.set("response_format", "json");
+
+  const response = await fetch(endpoint, { method: "POST", body: form });
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(`Transcription failed (${response.status})`);
+  return Transcription.parse(body).text;
 }
 
-const HubProposals = z.object({
-  hubs: z
-    .array(
-      z.object({
-        name: z.string(),
-        kind: HubKind,
-        line: z.string().nullable(),
-        query: z.string(),
-      }),
-    )
-    .max(3),
-});
+async function structuredCall<T extends z.ZodType>(
+  system: string,
+  input: unknown,
+  schema: T,
+  schemaName: string,
+): Promise<z.output<T>> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const completion = await client().chat.completions.create({
+      model: textModel(),
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: JSON.stringify(input) },
+      ],
+      response_format: zodResponseFormat(schema, schemaName),
+    });
 
-let openai: OpenAI | undefined;
+    try {
+      const content = completion.choices[0]?.message.content;
+      if (!content) throw new SyntaxError("The model returned no structured output");
+      return schema.parse(JSON.parse(content));
+    } catch (error) {
+      const parseFailure = error instanceof SyntaxError || error instanceof z.ZodError;
+      if (!parseFailure || attempt === 1) throw error;
+    }
+  }
+
+  throw new Error("Unreachable structured-output retry state");
+}
+
+async function cached<T>(namespace: string, input: unknown, load: () => Promise<T>): Promise<T> {
+  const key = `${namespace}:${createHash("sha256").update(JSON.stringify(input)).digest("hex")}`;
+  if (resultCache.has(key)) return resultCache.get(key) as T;
+  const result = await load();
+  resultCache.set(key, result);
+  return result;
+}
 
 function client(): OpenAI {
-  openai ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const baseURL = process.env.OPENAI_BASE_URL || "http://127.0.0.1:8650/v1";
+  if (new URL(baseURL).hostname === "api.openai.com") {
+    throw new Error("Ribot only permits the local Codex proxy, not api.openai.com");
+  }
+  openai ??= new OpenAI({ baseURL, apiKey: process.env.OPENAI_API_KEY || "unused" });
   return openai;
 }
 
-const textModel = () => process.env.RIBOT_LLM_MODEL || "gpt-4.1";
+const textModel = () => process.env.RIBOT_LLM_MODEL || "gpt-5.6-sol";
 
-/** Route helper: upstream failure → JSON body with the provider's error code (e.g. insufficient_quota), never a blank 500. */
+/** Route helper: upstream failure → JSON body with the provider's error code, never a blank 500. */
 export function llmErrorBody(error: unknown): { error: string; code: string | null } {
   const err = error as { message?: string; code?: string | null; type?: string };
   return { error: err?.message ?? "LLM call failed", code: err?.code ?? err?.type ?? null };
