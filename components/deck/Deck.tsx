@@ -114,6 +114,24 @@ function Quote({ id }: { id: string }) {
   );
 }
 
+function UrbanSeventyFiveDistance() {
+  const card = numberById("G8e");
+  const percentiles = Array.from(
+    card.quote.matchAll(/(\d+)%\s+(\d+(?:\.\d+)?)/g),
+    (match) => ({ percentage: match[1], distanceKm: match[2] }),
+  );
+  const urban75 = percentiles.find(({ percentage }) => percentage === "75");
+
+  if (!urban75) throw new Error("Missing urban 75th-percentile distance in G8e");
+
+  return (
+    <p className={styles.layerMetric}>
+      <strong>{urban75.percentage}%</strong>
+      <span>within {urban75.distanceKm} km</span>
+    </p>
+  );
+}
+
 function JapanStat() {
   const card = numberById("J7a");
   const [missing, dead] = card.value.split(" / ");
@@ -127,6 +145,40 @@ function JapanStat() {
         <strong>{dead}</strong> found dead
       </span>
     </div>
+  );
+}
+
+function PhoneTrackingGap() {
+  const tracked = numberById("K2e");
+  const average = numberById("K2a");
+  const adoption = numberById("K5a");
+  const police = numberById("K6");
+  const noPhone = police.label.split(", so")[0];
+
+  return (
+    <>
+      <h2 className={styles.toolQuestion}>Can&apos;t you just track the phone?</h2>
+      <div className={styles.trackingContrast}>
+        <div className={styles.trackedStat}>
+          <strong>{tracked.value}</strong>
+          <span>with a GPS tracker</span>
+        </div>
+        <span className={styles.versus}>vs</span>
+        <div className={styles.averageStat}>
+          <strong>{average.value}</strong>
+          <span>average</span>
+        </div>
+      </div>
+      <div className={styles.trackingReality}>
+        <div className={styles.adoptionStat}>
+          <strong>{adoption.value}</strong>
+          <span>{adoption.label}</span>
+        </div>
+        <p className={styles.phoneQuote}>
+          <span>{noPhone}.</span> {police.value}
+        </p>
+      </div>
+    </>
   );
 }
 
@@ -161,12 +213,8 @@ const slides = [
   </section>,
   <section className={styles.slide} key="tools">
     <p className={styles.eyebrow}>Today&apos;s tools find where she is now.</p>
-    <div className={styles.toolList}>
-      {["K5a", "K3a", "G11a", "G11c"].map((id) => (
-        <Stat id={id} compact key={id} />
-      ))}
-    </div>
-    <Sources ids={["K5a", "K3a", "G11a", "G11c"]} />
+    <PhoneTrackingGap />
+    <Sources ids={["K2e", "K2a", "K5a", "K6"]} />
   </section>,
   <section className={styles.slide} key="experts">
     <p className={styles.eyebrow}>The experts already know.</p>
@@ -182,26 +230,31 @@ const slides = [
     <Sources ids={["G8c", "G8d", "G10c", "G10b"]} />
   </section>,
   <section className={styles.slide} key="product">
-    <h2>
-      Her words tell you <em>WHEN</em> she is.
-      <span>Her family tells you <em>WHERE</em> that is.</span>
-    </h2>
-    <div className={styles.flow} aria-label="Words become an era, then places on today's map">
-      <div>
-        <span>spoken clues</span>
-        <strong>words</strong>
-      </div>
-      <i aria-hidden="true">→</i>
-      <div>
-        <span>young adulthood</span>
-        <strong>era</strong>
-      </div>
-      <i aria-hidden="true">→</i>
-      <div>
-        <span>home · station · factory</span>
-        <strong>places on today&apos;s map</strong>
-      </div>
+    <p className={styles.productKicker}>
+      Her words tell you <em>WHEN</em> she is. Her family tells you <em>WHERE</em> that is.
+    </p>
+    <h2>One plan from her life</h2>
+    <div className={styles.searchLayers} aria-label="Three layers in one search plan">
+      <article>
+        <h3>Her routine</h3>
+        <p className={styles.layerMetric}>
+          <strong>{numberById("G14").value}</strong>
+          <span>on a usual errand when they went missing</span>
+        </p>
+      </article>
+      <article>
+        <h3>Near danger</h3>
+        <UrbanSeventyFiveDistance />
+        <p className={styles.layerNote}>
+          {numberById("G15").value} — deaths close to home, near water and hills
+        </p>
+      </article>
+      <article>
+        <h3>Her past</h3>
+        <blockquote className={styles.layerQuote}>{numberById("G8c").value}</blockquote>
+      </article>
     </div>
+    <Sources ids={["G14", "G15", "G8e", "G8c"]} />
   </section>,
   <section className={`${styles.slide} ${styles.closing}`} key="closing">
     <p className={styles.closeLead}>
@@ -265,6 +318,9 @@ export function Deck() {
     >
       <div className={styles.frame}>
         {slides[active]}
+        <span className={styles.slideNumber} aria-label={`Slide ${active + 1} of ${SLIDE_COUNT}`}>
+          {active + 1} / {SLIDE_COUNT}
+        </span>
       </div>
     </main>
   );

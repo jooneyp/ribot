@@ -543,5 +543,223 @@
         "past"
       ]
     }
+  },
+  "replay-bulgwang": {
+    "case_id": "replay-bulgwang",
+    "era": {
+      "living_in": {
+        "label": "farming working years",
+        "approx_year": 1989,
+        "year_range": [
+          1960,
+          2018
+        ],
+        "age": 45
+      },
+      "intent": "going_to_work",
+      "evidence": [
+        {
+          "quote": "논에 가야 한다",
+          "why": "“논”으로 가야 한다는 말은 농사일을 하던 시기를 현재로 여기고 있을 가능성을 시사한다. 2019년에 70대이면 출생 시기는 대략 1940~1949년이며, 농사일을 하는 성인기를 보수적으로 20~69세로 보면 약 1960~2018년이다. 따라서 중간값인 1989년, 약 45세 무렵으로 넓게 추정한다. 논으로 향한다는 목적은 농사일을 하러 가는 것으로 해석해 going_to_work로 분류했다."
+        }
+      ],
+      "questions_for_family": [
+        "어머니가 직접 논농사를 지었던 시기는 언제인가요?",
+        "“논에 가야 한다”는 말을 과거 특정 시기에 자주 하셨나요?",
+        "어머니가 가려던 논은 예전에 일하던 가족 소유의 논이었나요?"
+      ]
+    },
+    "profile": {
+      "person": {
+        "display_name": "Case replay-bulgwang",
+        "birth_year": null,
+        "hometown": null
+      },
+      "eras": [
+        {
+          "id": "era-past-residence",
+          "label": "Past residence",
+          "start_year": null,
+          "end_year": null,
+          "age_range": null,
+          "places": [
+            {
+              "id": "place-past-residence",
+              "name_then": "전남 고흥",
+              "type": "home",
+              "modern_query": "전남 고흥",
+              "evidence_quote": "전남 고흥",
+              "confidence": 1,
+              "geo": null
+            }
+          ]
+        }
+      ],
+      "habits": [],
+      "source_text": "전남 고흥"
+    },
+    "plan": {
+      "last_seen": {
+        "label": "서울 은평구 (city-level)",
+        "geo": {
+          "lat": 37.6028174370821,
+          "lng": 126.928940981464,
+          "display_name": "서울 은평구",
+          "source": "kakao"
+        }
+      },
+      "elapsed_hours": 1,
+      "circle": {
+        "center": {
+          "lat": 37.6028174370821,
+          "lng": 126.928940981464
+        },
+        "radius_km": 12.6,
+        "label": "radius search",
+        "assumption": "95% of urban dementia searches end within 12.6 km (Koester, Lost Person Behavior, n=336)"
+      },
+      "candidates": [
+        {
+          "rank": 1,
+          "layer": "past",
+          "place_id": "place-past-residence",
+          "name": "전남 고흥",
+          "era_id": "era-past-residence",
+          "geo": {
+            "lat": 34.6045630228768,
+            "lng": 127.275461659475,
+            "display_name": "전남광주통합특별시 고흥군",
+            "source": "kakao"
+          },
+          "distance_km_from_last_seen": 334.8,
+          "score": 0.8,
+          "score_parts": {
+            "era_match": 1,
+            "reachability": 0.8,
+            "confidence": 1
+          },
+          "why": "Past residence place · era overlaps 1960–2018 · 334.8 km from last seen"
+        }
+      ],
+      "send_first": [
+        {
+          "name": "서울서부시외버스터미널",
+          "kind": "bus",
+          "line": null,
+          "geo": null,
+          "label": "proposed, verify"
+        },
+        {
+          "name": "연신내역",
+          "kind": "subway",
+          "line": "수도권 전철 3호선·6호선",
+          "geo": {
+            "lat": 37.61920414913163,
+            "lng": 126.92110296894133,
+            "display_name": "연신내역 3호선",
+            "source": "kakao"
+          },
+          "label": "proposed, verify"
+        },
+        {
+          "name": "불광역",
+          "kind": "subway",
+          "line": "수도권 전철 3호선·6호선",
+          "geo": {
+            "lat": 37.6100477979795,
+            "lng": 126.930315826401,
+            "display_name": "불광역 3호선",
+            "source": "kakao"
+          },
+          "label": "proposed, verify"
+        }
+      ],
+      "finder_card": {
+        "ko": [
+          "따지지 마세요.",
+          "\"일하러 가세요? 같이 가요.\"",
+          "천천히, 옆에서 걸어 주세요."
+        ],
+        "en": [
+          "Don't argue.",
+          "\"Going to work? Let's go together.\"",
+          "Walk slowly, beside them."
+        ]
+      },
+      "hazards": [
+        {
+          "name": "백련산",
+          "kind": "hill",
+          "geo": {
+            "lat": 37.591588587024475,
+            "lng": 126.92778880701992,
+            "display_name": "백련산",
+            "source": "kakao"
+          },
+          "distance_km": 1.3
+        },
+        {
+          "name": "홍제천",
+          "kind": "water",
+          "geo": {
+            "lat": 37.5985315380494,
+            "lng": 126.948200143682,
+            "display_name": "홍제천",
+            "source": "kakao"
+          },
+          "distance_km": 1.8
+        },
+        {
+          "name": "수미산",
+          "kind": "hill",
+          "geo": {
+            "lat": 37.5868539203637,
+            "lng": 126.939055461254,
+            "display_name": "수미산",
+            "source": "kakao"
+          },
+          "distance_km": 2
+        },
+        {
+          "name": "고은산",
+          "kind": "hill",
+          "geo": {
+            "lat": 37.586352984971,
+            "lng": 126.939087571298,
+            "display_name": "고은산",
+            "source": "kakao"
+          },
+          "distance_km": 2
+        },
+        {
+          "name": "불광천",
+          "kind": "water",
+          "geo": {
+            "lat": 37.5880632478519,
+            "lng": 126.913416327241,
+            "display_name": "불광천",
+            "source": "kakao"
+          },
+          "distance_km": 2.1
+        },
+        {
+          "name": "구기천",
+          "kind": "water",
+          "geo": {
+            "lat": 37.6141936386246,
+            "lng": 126.955288563698,
+            "display_name": "구기천",
+            "source": "kakao"
+          },
+          "distance_km": 2.6
+        }
+      ],
+      "hazard_ring_km": 3.2,
+      "check_order": [
+        "past",
+        "routine",
+        "near_danger"
+      ]
+    }
   }
 }
