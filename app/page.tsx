@@ -1,103 +1,386 @@
-import Image from "next/image";
+"use client";
+
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Recorder from "@/components/Recorder";
+import ThenNow from "@/components/map/ThenNow";
+import HookStage from "@/components/panels/HookStage";
+import ResultPanel, { unknown } from "@/components/panels/ResultPanel";
+import { api } from "@/lib/api";
+import type { EraImagery, LatLng, LifeProfile, ReplayCase, ReplayRun, RevealMetrics } from "@/lib/contracts";
+
+const MapView = dynamic(() => import("@/components/map/MapView"), { ssr: false });
+
+type Tab = "replay" | "words" | "profile";
+const HOOK_ID = "hook-1962";
+const CASE_TITLES: Record<string, string> = { "hook-1962": "The question", "replay-srt": "The station", "replay-naju": "The hometown" };
+const IMAGERY_YEARS = 15;
+const IMAGERY_NEAR_KM = 15;
+
+const message = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const lines = (text: string) => text.split("\n").map((w) => w.trim()).filter(Boolean);
+const approxKm = (a: LatLng, b: LatLng) => Math.hypot((a.lat - b.lat) * 111, (a.lng - b.lng) * 88);
+
+/** Imagery whose `then.year` ± 15 overlaps the year range and that has a point within ~15 km of its center. */
+function imageryNear(imagery: EraImagery[], range: [number | null, number | null], points: LatLng[]) {
+  return imagery.filter((image) => {
+    const [start, end] = range;
+    if (start != null && image.then.year + IMAGERY_YEARS < start) return false;
+    if (end != null && image.then.year - IMAGERY_YEARS > end) return false;
+    return image.center != null && points.some((p) => approxKm(p, image.center!) < IMAGERY_NEAR_KM);
+  });
+}
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [present, setPresent] = useState(false);
+  const [tab, setTab] = useState<Tab>("replay");
+  const [cases, setCases] = useState<ReplayCase[]>([]);
+  const [selectedId, setSelectedId] = useState(HOOK_ID);
+  const [imagery, setImagery] = useState<EraImagery[]>([]);
+  const [run, setRun] = useState<ReplayRun | null>(null);
+  const [reveal, setReveal] = useState<RevealMetrics | null>(null);
+  const [typed, setTyped] = useState<string[]>([]);
+  const [typingDone, setTypingDone] = useState(false);
+  const [revealReady, setRevealReady] = useState(false);
+  const [hookRevealed, setHookRevealed] = useState(false);
+  const [wordsText, setWordsText] = useState("");
+  const [ageBand, setAgeBand] = useState("");
+  const [profileText, setProfileText] = useState("");
+  const [profile, setProfile] = useState<LifeProfile | null>(null);
+  const [decade, setDecade] = useState<number | null>(null);
+  const [openImagery, setOpenImagery] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const selectedCase = cases.find((c) => c.id === selectedId) ?? null;
+  const isHook = tab === "replay" && selectedId === HOOK_ID;
+  const imageryItem = imagery.find((i) => i.id === openImagery) ?? null;
+
+  useEffect(() => {
+    setPresent(new URLSearchParams(window.location.search).has("present"));
+    api.cases().then((all) => setCases(all.filter((c) => c.role !== "README only"))).catch((e) => setError(message(e, "Could not load cases.")));
+    api.imagery().then((list) => setImagery(Array.isArray(list) ? list : [])).catch(() => setImagery([]));
+  }, []);
+
+  const resetRun = useCallback(() => {
+    setRun(null); setReveal(null); setError(null); setHookRevealed(false); setRevealReady(false); setOpenImagery(null);
+  }, []);
+
+  // Reset on tab/case change.
+  useEffect(() => { resetRun(); }, [tab, selectedId, resetRun]);
+
+  // Hook typewriter: ~40 ms/char, 600 ms between lines.
+  useEffect(() => {
+    const words = isHook ? selectedCase?.her_words : undefined;
+    if (!words) { setTyped([]); setTypingDone(true); return; }
+    let cancelled = false;
+    setTyped([]); setTypingDone(false);
+    void (async () => {
+      await sleep(600);
+      for (const line of words) {
+        if (cancelled) return;
+        setTyped((old) => [...old, ""]);
+        for (let i = 1; i <= line.length; i++) {
+          await sleep(40);
+          if (cancelled) return;
+          setTyped((old) => [...old.slice(0, -1), line.slice(0, i)]);
+        }
+        await sleep(600);
+      }
+      if (!cancelled) setTypingDone(true);
+    })();
+    return () => { cancelled = true; };
+  }, [isHook, selectedCase]);
+
+  // Hook Reveal button appears 1 s after the era result.
+  useEffect(() => {
+    if (!run || !isHook) return;
+    const t = window.setTimeout(() => setRevealReady(true), 1000);
+    return () => window.clearTimeout(t);
+  }, [run, isHook]);
+
+  const runEra = useCallback(async () => {
+    resetRun();
+    setBusy("Reading her words…");
+    try {
+      if (tab === "replay") {
+        const next = await api.replayRun(selectedId);
+        if (!next) throw new Error(`No replay result for ${selectedId}.`);
+        setRun(next);
+      } else {
+        const words = lines(wordsText);
+        if (!words.length) throw new Error("Enter at least one utterance.");
+        const era = await api.era({ words, report_words: null, age_band: ageBand.trim() || null, now_year: new Date().getFullYear() });
+        setRun({ case_id: "her-words", era, profile: null, plan: null });
+      }
+    } catch (e) {
+      setError(message(e, "Something went wrong."));
+    } finally {
+      setBusy(null);
+    }
+  }, [ageBand, resetRun, selectedId, tab, wordsText]);
+
+  const buildProfile = useCallback(async () => {
+    if (!profileText.trim()) { setError("Paste the family's words or choose an audio file."); return; }
+    resetRun();
+    setBusy("Building the life profile…");
+    try {
+      const parsed = await api.profile({ text: profileText, display_name: null });
+      setBusy("Finding places on today's map…");
+      const geocoded = await api.geocodeProfile(parsed);
+      setProfile(geocoded);
+      const first = geocoded.eras.map((e) => e.start_year).find((y): y is number => y != null);
+      setDecade(first == null ? null : Math.floor(first / 10) * 10);
+    } catch (e) {
+      setError(message(e, "Could not build the profile."));
+    } finally {
+      setBusy(null);
+    }
+  }, [profileText, resetRun]);
+
+  const doReveal = useCallback(async () => {
+    if (!run?.plan) return;
+    setBusy("Checking against the published account…");
+    try {
+      const metrics = await api.reveal(run.case_id, run.plan);
+      if (!metrics) throw new Error(`No reveal result for ${run.case_id}.`);
+      setReveal(metrics);
+    } catch (e) {
+      setError(message(e, "Could not reveal the result."));
+    } finally {
+      setBusy(null);
+    }
+  }, [run]);
+
+  // Present mode: Space = next step.
+  useEffect(() => {
+    if (!present) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.code !== "Space" || ["INPUT", "TEXTAREA", "SELECT"].includes((event.target as HTMLElement).tagName)) return;
+      event.preventDefault();
+      if (busy) return;
+      if (isHook) {
+        if (!run && typingDone) void runEra();
+        else if (run && revealReady && !hookRevealed) setHookRevealed(true);
+      } else if (tab === "profile") {
+        if (!profile) void buildProfile();
+      } else if (!run) void runEra();
+      else if (run.plan && !reveal) void doReveal();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [busy, buildProfile, doReveal, hookRevealed, isHook, present, profile, reveal, revealReady, run, runEra, tab, typingDone]);
+
+  const decades = useMemo(() => {
+    const years = profile?.eras.flatMap((e) => [e.start_year, e.end_year]).filter((y): y is number => y != null) ?? [];
+    if (!years.length) return [];
+    const start = Math.floor(Math.min(...years) / 10) * 10;
+    const end = Math.floor(Math.max(...years) / 10) * 10;
+    return Array.from({ length: (end - start) / 10 + 1 }, (_, i) => start + i * 10);
+  }, [profile]);
+
+  // Then / Now: for the active run (era year range × plan candidates) or the profile (each era × its places).
+  const thenNow = useMemo(() => {
+    if (run?.plan) {
+      const range = run.era.living_in.year_range ?? [null, null];
+      return imageryNear(imagery, range, run.plan.candidates.map((c) => c.geo));
+    }
+    if (!run && profile && tab === "profile") {
+      const hits = profile.eras.flatMap((era) =>
+        imageryNear(imagery, [era.start_year, era.end_year], era.places.flatMap((p) => (p.geo ? [p.geo] : []))),
+      );
+      return [...new Map(hits.map((h) => [h.id, h])).values()];
+    }
+    return [];
+  }, [imagery, profile, run, tab]);
+
+  const mapProfile = tab === "profile" ? profile : run?.profile ?? null;
+  const shownWords = tab === "words" ? lines(wordsText) : selectedCase?.her_words ?? (selectedCase?.report_words ? [selectedCase.report_words] : []);
+
+  return (
+    <main className={`app-shell ${present ? "present" : ""}`}>
+      <header className="topbar">
+        <div>
+          <span className="brand-mark" aria-hidden>R</span>
+          <h1>Ribot <span>— Search where she&apos;s from</span></h1>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+        {!present && <p className="mode">Prototype · family-guided search</p>}
+      </header>
+
+      <section className="workspace">
+        <aside className="input-panel">
+          <nav className="tabs" aria-label="Input mode">
+            {(["replay", "words", "profile"] as Tab[]).map((t) => (
+              <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>
+                {t === "words" ? "Her words" : t === "profile" ? "Family profile" : "Replay"}
+              </button>
+            ))}
+          </nav>
+
+          {tab === "replay" && (
+            <div className="panel-body">
+              <div className="eyebrow">Published case replay</div>
+              <div className="case-list">
+                {cases.map((c) => (
+                  <button key={c.id} className={selectedId === c.id ? "selected" : ""} onClick={() => setSelectedId(c.id)}>
+                    <b>{CASE_TITLES[c.id] ?? c.id}</b>
+                    <small>{c.source_note}</small>
+                  </button>
+                ))}
+              </div>
+              {selectedCase && !isHook && (
+                <div className="case-input">
+                  <span className="section-label">Input</span>
+                  {selectedCase.report_words && <p><small>Report</small><span lang="ko">“{selectedCase.report_words}”</span></p>}
+                  <p><small>Home</small><span lang="ko">{unknown(selectedCase.home)}</span></p>
+                  <p><small>Hometown (family)</small><span lang="ko">{unknown(selectedCase.profile_hometown)}</span></p>
+                </div>
+              )}
+              {selectedCase?.profile_hometown_provenance && (
+                <div className="provenance"><b>Note on this input</b>{selectedCase.profile_hometown_provenance}</div>
+              )}
+              {!isHook && (
+                <button className="primary" disabled={!!busy} onClick={() => void runEra()}>
+                  Run replay <span>→</span>
+                </button>
+              )}
+            </div>
+          )}
+
+          {tab === "words" && (
+            <div className="panel-body">
+              <div className="eyebrow">What she is saying now</div>
+              <label>
+                One utterance per line
+                <textarea value={wordsText} onChange={(e) => setWordsText(e.target.value)} placeholder={"여기 어디예요?\n친구는 취직했나?"} rows={8} lang="ko" />
+              </label>
+              <label>
+                Age band
+                <input value={ageBand} onChange={(e) => setAgeBand(e.target.value)} placeholder="e.g. 80s" />
+              </label>
+              <button className="primary" disabled={!!busy} onClick={() => void runEra()}>
+                Where is she? <span>→</span>
+              </button>
+            </div>
+          )}
+
+          {tab === "profile" && (
+            <div className="panel-body">
+              <div className="eyebrow">Fill it once</div>
+              <p className="intro">Her family describes places, routines and eras once — typed, or a phone recording.</p>
+              <label>
+                Family&apos;s words
+                <textarea value={profileText} onChange={(e) => setProfileText(e.target.value)} placeholder="고향은… 열일곱에 서울 올라와서…" rows={9} lang="ko" />
+              </label>
+              <Recorder onText={setProfileText} onError={setError} />
+              <button className="primary" disabled={!!busy} onClick={() => void buildProfile()}>
+                Build profile <span>→</span>
+              </button>
+            </div>
+          )}
+        </aside>
+
+        <section className="map-panel">
+          {isHook && selectedCase ? (
+            <HookStage
+              hookCase={selectedCase}
+              typed={typed}
+              typingDone={typingDone}
+              run={run}
+              busy={!!busy}
+              revealReady={revealReady}
+              revealed={hookRevealed}
+              onAsk={() => void runEra()}
+              onReveal={() => setHookRevealed(true)}
+            />
+          ) : (
+            <>
+              <MapView
+                plan={run?.plan ?? null}
+                profile={mapProfile}
+                decade={tab === "profile" ? decade : null}
+                reveal={reveal}
+                imagery={imagery}
+                onSelectImagery={setOpenImagery}
+                present={present}
+              />
+              {tab === "profile" && profile && (
+                <div className="timeline-card">
+                  <div className="era-row">
+                    {profile.eras.map((era) => {
+                      const active = decade != null && (era.start_year ?? -Infinity) <= decade + 9 && (era.end_year ?? Infinity) >= decade;
+                      return (
+                        <div key={era.id} className={active ? "active" : ""}>
+                          <b>{era.label}</b>
+                          <span>{unknown(era.start_year)}–{unknown(era.end_year)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {decades.length > 0 && (
+                    <div className="decade-row">
+                      <button className={`chip ${decade == null ? "on" : ""}`} onClick={() => setDecade(null)}>All</button>
+                      <label>
+                        <span>Map decade <b>{decade == null ? "all" : `${decade}s`}</b></span>
+                        <input
+                          type="range"
+                          min={decades[0]}
+                          max={decades.at(-1)}
+                          step={10}
+                          value={decade ?? decades[0]}
+                          onChange={(e) => setDecade(Number(e.target.value))}
+                          list="decade-ticks"
+                        />
+                        <datalist id="decade-ticks">{decades.map((d) => <option key={d} value={d} label={`${d}s`} />)}</datalist>
+                        <span className="ticks">{decades.map((d) => <i key={d}>{d}s</i>)}</span>
+                      </label>
+                    </div>
+                  )}
+                  {thenNow.length > 0 && (
+                    <div className="then-now-row">
+                      {thenNow.map((image) => (
+                        <button key={image.id} className="secondary" onClick={() => setOpenImagery(image.id)}>
+                          Then / Now · {image.place_label} · {image.then.year}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {imageryItem && (
+                <div className="then-now-overlay">
+                  <ThenNow imagery={imageryItem} onClose={() => setOpenImagery(null)} />
+                  <button className="close" onClick={() => setOpenImagery(null)} aria-label="Close">×</button>
+                </div>
+              )}
+            </>
+          )}
+        </section>
+
+        <ResultPanel
+          run={run}
+          reveal={reveal}
+          profile={tab === "profile" ? profile : null}
+          words={isHook ? [] : shownWords}
+          busy={busy}
+          error={error}
+          thenNow={tab === "profile" ? [] : thenNow}
+          onThenNow={setOpenImagery}
+          onReveal={() => void doReveal()}
+        />
+      </section>
+
+      <footer>
+        {tab === "replay" && selectedCase ? (
+          <>
+            <span>Replays of published cases; not an accuracy claim.</span>
+            <a href={selectedCase.source_url} target="_blank" rel="noreferrer">Source: {selectedCase.source_note} ↗</a>
+          </>
+        ) : (
+          <span>Unknown values are shown as “unknown”. Places marked “proposed, verify” need human confirmation.</span>
+        )}
       </footer>
-    </div>
+    </main>
   );
 }
