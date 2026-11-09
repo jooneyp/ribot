@@ -220,7 +220,7 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
               <div className={`check-layer check-layer-${layer}`} key={layer}>
                 {layer === "routine" && (
                   <>
-                    <h3>Her routine</h3>
+                    <h3>Routine</h3>
                     {ROUTINE_NUMBER && <a className="layer-subtitle" href={ROUTINE_NUMBER.source_url} target="_blank" rel="noreferrer">{ROUTINE_NUMBER.value} go missing on a usual errand ↗</a>}
                     <CandidateList candidates={routineCandidates} />
                   </>
@@ -246,7 +246,7 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
                 )}
                 {layer === "past" && (
                   <>
-                    <h3>Her past</h3>
+                    <h3>Past places</h3>
                     <CandidateList candidates={pastCandidates} />
                     {plan.send_first.length > 0 && (
                       <div className="send-first-compact">
