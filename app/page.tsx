@@ -16,11 +16,23 @@ type CaseWithSubtitles = ReplayCase & {
   her_words_en?: string[];
   family_words_en?: string[];
   report_words_en?: string | null;
+  search_note_en?: string;
+  reveal_mode?: "text";
+  found: ReplayCase["found"] & {
+    place_en?: string;
+    time?: string;
+  };
 };
 const HOOK_ID = "hook-1962";
 const SEARCH_MANUAL_RADIUS_KM = 12.6;
 const SEARCH_MANUAL_ASSUMPTION = "95% of urban dementia searches end within 12.6 km (Koester, Lost Person Behavior, n=336)";
-const CASE_TITLES: Record<string, string> = { "hook-1962": "The question", "replay-srt": "The station", "replay-naju": "The hometown" };
+const CASE_ORDER = ["hook-1962", "replay-srt", "replay-naju", "replay-uijeongbu"];
+const CASE_TITLES: Record<string, string> = {
+  "hook-1962": "The question",
+  "replay-srt": "The station",
+  "replay-naju": "The hometown",
+  "replay-uijeongbu": "Near home",
+};
 const IMAGERY_YEARS = 15;
 const IMAGERY_NEAR_KM = 15;
 
@@ -82,6 +94,7 @@ export default function Home() {
   const [typingDone, setTypingDone] = useState(false);
   const [revealReady, setRevealReady] = useState(false);
   const [hookRevealed, setHookRevealed] = useState(false);
+  const [textRevealed, setTextRevealed] = useState(false);
   const [wordsText, setWordsText] = useState("");
   const [ageBand, setAgeBand] = useState("");
   const [profileText, setProfileText] = useState("");
@@ -94,16 +107,20 @@ export default function Home() {
   const selectedCase = cases.find((c) => c.id === selectedId) ?? null;
   const selectedPronouns = pronouns(selectedCase?.sex);
   const isHook = tab === "replay" && selectedId === HOOK_ID;
+  const isTextReveal = tab === "replay" && selectedCase?.reveal_mode === "text";
   const imageryItem = imagery.find((i) => i.id === openImagery) ?? null;
 
   useEffect(() => {
     setPresent(new URLSearchParams(window.location.search).has("present"));
-    api.cases().then((all) => setCases(all.filter((c) => c.role !== "README only") as CaseWithSubtitles[])).catch((e) => setError(message(e, "Could not load cases.")));
+    api.cases()
+      .then((all) => setCases((all.filter((c) => c.role !== "README only") as CaseWithSubtitles[])
+        .toSorted((a, b) => CASE_ORDER.indexOf(a.id) - CASE_ORDER.indexOf(b.id))))
+      .catch((e) => setError(message(e, "Could not load cases.")));
     api.imagery().then((list) => setImagery(Array.isArray(list) ? list : [])).catch(() => setImagery([]));
   }, []);
 
   const resetRun = useCallback(() => {
-    setRun(null); setReveal(null); setError(null); setHookRevealed(false); setRevealReady(false); setOpenImagery(null);
+    setRun(null); setReveal(null); setError(null); setHookRevealed(false); setTextRevealed(false); setRevealReady(false); setOpenImagery(null);
   }, []);
 
   // Reset on tab/case change.
@@ -180,6 +197,10 @@ export default function Home() {
 
   const doReveal = useCallback(async () => {
     if (!run?.plan) return;
+    if (isTextReveal) {
+      setTextRevealed(true);
+      return;
+    }
     setBusy("Checking against the published account…");
     try {
       const metrics = await api.reveal(run.case_id, run.plan);
@@ -190,7 +211,7 @@ export default function Home() {
     } finally {
       setBusy(null);
     }
-  }, [run]);
+  }, [isTextReveal, run]);
 
   // Present mode: arrows choose a replay; Space advances its current step.
   useEffect(() => {
@@ -214,11 +235,11 @@ export default function Home() {
       } else if (tab === "profile") {
         if (!profile) void buildProfile();
       } else if (!run) void runEra();
-      else if (run.plan && !reveal) void doReveal();
+      else if (run.plan && !reveal && !textRevealed) void doReveal();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [busy, buildProfile, cases, doReveal, hookRevealed, isHook, present, profile, reveal, revealReady, run, runEra, selectedId, tab, typingDone]);
+  }, [busy, buildProfile, cases, doReveal, hookRevealed, isHook, present, profile, reveal, revealReady, run, runEra, selectedId, tab, textRevealed, typingDone]);
 
   const decades = useMemo(() => {
     const years = profile?.eras.flatMap((e) => [e.start_year, e.end_year]).filter((y): y is number => y != null) ?? [];
@@ -288,6 +309,12 @@ export default function Home() {
                       <small>{selectedPronouns.possessive[0].toUpperCase() + selectedPronouns.possessive.slice(1)} family&apos;s report</small>
                       <span lang="ko">“{selectedCase.report_words}”</span>
                       {selectedCase.report_words_en && <span className="quote-subtitle">{selectedCase.report_words_en}</span>}
+                    </p>
+                  )}
+                  {selectedCase.search_note_en && (
+                    <p className="search-note-input">
+                      <small>Search assumption before she was found</small>
+                      <span>{selectedCase.search_note_en}</span>
                     </p>
                   )}
                   {!selectedCase.report_words && selectedCase.family_words?.[0] && (
@@ -434,13 +461,21 @@ export default function Home() {
           thenNow={tab === "profile" ? [] : thenNow}
           onThenNow={setOpenImagery}
           onReveal={() => void doReveal()}
+          textReveal={isTextReveal && selectedCase ? {
+            revealed: textRevealed,
+            place: selectedCase.found.place,
+            placeEn: selectedCase.found.place_en ?? "Translation unavailable.",
+            time: selectedCase.found.time ?? "unknown",
+            sourceUrl: selectedCase.source_url,
+            sourceNote: selectedCase.source_note,
+          } : null}
         />
       </section>
 
       <footer>
         {tab === "replay" && selectedCase ? (
           <>
-            <span>Replays of published cases; not an accuracy claim.</span>
+            <span>{isTextReveal ? "Published case replay." : "Replays of published cases; not an accuracy claim."}</span>
             <a href={selectedCase.source_url} target="_blank" rel="noreferrer">Source: {selectedCase.source_note} ↗</a>
           </>
         ) : (
