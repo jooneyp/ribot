@@ -1,23 +1,48 @@
 {
-  "case_id": "dev",
-  "found": {
-    "label": "익산행 열차 (dev)",
-    "geo": {
-      "lat": 37.4874,
-      "lng": 127.1015,
-      "display_name": "수서역, 서울 강남구",
-      "source": "fixture"
-    }
+  "replay-srt": {
+    "case_id": "replay-srt",
+    "found": {
+      "label": "수서역 (익산행 열차)",
+      "geo": {
+        "lat": 37.4874,
+        "lng": 127.1015,
+        "display_name": "수서역 (익산행 열차)",
+        "source": "fixture"
+      }
+    },
+    "home_to_found_km": 14.0,
+    "inside_circle": false,
+    "candidates": [
+      {
+        "rank": 1,
+        "name": "익산 (hometown)",
+        "distance_to_found_km": 171.6
+      }
+    ],
+    "nearest_candidate_rank": 1,
+    "computed_at": "2026-11-09T10:15:00+09:00"
   },
-  "home_to_found_km": 3.1,
-  "inside_circle": false,
-  "candidates": [
-    {
-      "rank": 1,
-      "name": "익산 (hometown)",
-      "distance_to_found_km": 172.4
-    }
-  ],
-  "nearest_candidate_rank": 1,
-  "computed_at": "2026-11-09T10:00:00+09:00"
+  "replay-naju": {
+    "case_id": "replay-naju",
+    "found": {
+      "label": "나주시 영산동 (dev approx)",
+      "geo": {
+        "lat": 35.0081,
+        "lng": 126.7136,
+        "display_name": "나주시 영산동 (dev approx)",
+        "source": "fixture"
+      }
+    },
+    "home_to_found_km": 21.0,
+    "inside_circle": false,
+    "candidates": [
+      {
+        "rank": 1,
+        "name": "전남 나주 (hometown)",
+        "distance_to_found_km": 0.9
+      }
+    ],
+    "nearest_candidate_rank": 1,
+    "computed_at": "2026-11-09T10:15:00+09:00"
+  }
 }

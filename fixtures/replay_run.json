@@ -1,32 +1,267 @@
 {
-  "case_id": "hook-1962",
-  "era": {
-    "living_in": {
-      "label": "just arrived in Seoul with a friend to find work",
-      "approx_year": 1962,
-      "year_range": [
-        1958,
-        1966
-      ],
-      "age": 17
-    },
-    "intent": "looking_for_someone",
-    "evidence": [
-      {
-        "quote": "내가 어제 친구랑 같이 서울에 왔어요",
-        "why": "She describes arriving in Seoul as yesterday."
+  "hook-1962": {
+    "case_id": "hook-1962",
+    "era": {
+      "living_in": {
+        "label": "just arrived in Seoul with a friend to find work",
+        "approx_year": 1962,
+        "year_range": [
+          1958,
+          1966
+        ],
+        "age": 17
       },
-      {
-        "quote": "친구는 취직했나?",
-        "why": "She is thinking about a friend looking for a job."
-      }
-    ],
-    "questions_for_family": [
-      "Where did she first arrive in Seoul?",
-      "Where was her first job?",
-      "Where did the friend she came with live?"
-    ]
+      "intent": "looking_for_someone",
+      "evidence": [
+        {
+          "quote": "내가 어제 친구랑 같이 서울에 왔어요",
+          "why": "She describes arriving in Seoul as yesterday."
+        },
+        {
+          "quote": "친구는 취직했나?",
+          "why": "She is thinking about a friend looking for a job."
+        }
+      ],
+      "questions_for_family": [
+        "Where did she first arrive in Seoul?",
+        "Where was her first job?",
+        "Where did the friend she came with live?"
+      ]
+    },
+    "profile": null,
+    "plan": null
   },
-  "profile": null,
-  "plan": null
+  "replay-srt": {
+    "case_id": "replay-srt",
+    "era": {
+      "living_in": {
+        "label": "going home to his hometown",
+        "approx_year": null,
+        "year_range": null,
+        "age": null
+      },
+      "intent": "going_home",
+      "evidence": [],
+      "questions_for_family": []
+    },
+    "profile": {
+      "person": {
+        "display_name": "Case replay-srt",
+        "birth_year": null,
+        "hometown": "익산"
+      },
+      "eras": [
+        {
+          "id": "era-hometown",
+          "label": "Hometown",
+          "start_year": null,
+          "end_year": null,
+          "age_range": null,
+          "places": [
+            {
+              "id": "p-hometown",
+              "name_then": "익산",
+              "type": "home",
+              "modern_query": "전북 익산시",
+              "evidence_quote": "익산",
+              "confidence": 0.9,
+              "geo": {
+                "lat": 35.9483,
+                "lng": 126.9577,
+                "display_name": "전북 익산시",
+                "source": "fixture"
+              }
+            }
+          ]
+        }
+      ],
+      "habits": [],
+      "source_text": "익산"
+    },
+    "plan": {
+      "last_seen": {
+        "label": "서울 (city-level)",
+        "geo": {
+          "lat": 37.5663,
+          "lng": 126.9779,
+          "display_name": "서울 (city-level)",
+          "source": "fixture"
+        }
+      },
+      "elapsed_hours": 1,
+      "circle": {
+        "center": {
+          "lat": 37.5663,
+          "lng": 126.9779
+        },
+        "radius_km": 3,
+        "label": "radius search",
+        "assumption": "assumed 3 km/h walk, capped at 5 km; demo elapsed time 1 h"
+      },
+      "candidates": [
+        {
+          "rank": 1,
+          "place_id": "p-hometown",
+          "name": "익산 (hometown)",
+          "era_id": "era-hometown",
+          "geo": {
+            "lat": 35.9483,
+            "lng": 126.9577,
+            "display_name": "전북 익산시",
+            "source": "fixture"
+          },
+          "distance_km_from_last_seen": 179.9,
+          "score": 0.72,
+          "score_parts": {
+            "era_match": 1,
+            "reachability": 0.8,
+            "confidence": 0.9
+          },
+          "why": "Hometown."
+        }
+      ],
+      "send_first": [
+        {
+          "name": "수서역 SRT",
+          "kind": "train",
+          "line": "SRT 호남선",
+          "geo": {
+            "lat": 37.4874,
+            "lng": 127.1015,
+            "display_name": "수서역 SRT",
+            "source": "fixture"
+          },
+          "label": "proposed, verify"
+        },
+        {
+          "name": "용산역 KTX",
+          "kind": "train",
+          "line": "KTX 호남선",
+          "geo": {
+            "lat": 37.5299,
+            "lng": 126.9648,
+            "display_name": "용산역 KTX",
+            "source": "fixture"
+          },
+          "label": "proposed, verify"
+        }
+      ],
+      "finder_card": {
+        "ko": [
+          "따지지 마세요.",
+          "\"고향 가세요? 같이 가요.\"",
+          "천천히, 옆에서 걸어 주세요."
+        ],
+        "en": [
+          "Don't argue.",
+          "\"Going home? Let's go together.\"",
+          "Walk slowly, beside him."
+        ]
+      }
+    }
+  },
+  "replay-naju": {
+    "case_id": "replay-naju",
+    "era": {
+      "living_in": {
+        "label": "unknown",
+        "approx_year": null,
+        "year_range": null,
+        "age": null
+      },
+      "intent": "unknown",
+      "evidence": [],
+      "questions_for_family": []
+    },
+    "profile": {
+      "person": {
+        "display_name": "Case replay-naju",
+        "birth_year": null,
+        "hometown": "전남 나주"
+      },
+      "eras": [
+        {
+          "id": "era-hometown",
+          "label": "Hometown",
+          "start_year": null,
+          "end_year": null,
+          "age_range": null,
+          "places": [
+            {
+              "id": "p-hometown",
+              "name_then": "전남 나주",
+              "type": "home",
+              "modern_query": "전남 나주시",
+              "evidence_quote": "전남 나주",
+              "confidence": 0.9,
+              "geo": {
+                "lat": 35.016,
+                "lng": 126.7108,
+                "display_name": "전남 나주시",
+                "source": "fixture"
+              }
+            }
+          ]
+        }
+      ],
+      "habits": [],
+      "source_text": "전남 나주"
+    },
+    "plan": {
+      "last_seen": {
+        "label": "광주 (city-level)",
+        "geo": {
+          "lat": 35.1601,
+          "lng": 126.8514,
+          "display_name": "광주 (city-level)",
+          "source": "fixture"
+        }
+      },
+      "elapsed_hours": 1,
+      "circle": {
+        "center": {
+          "lat": 35.1601,
+          "lng": 126.8514
+        },
+        "radius_km": 3,
+        "label": "radius search",
+        "assumption": "assumed 3 km/h walk, capped at 5 km; demo elapsed time 1 h"
+      },
+      "candidates": [
+        {
+          "rank": 1,
+          "place_id": "p-hometown",
+          "name": "전남 나주 (hometown)",
+          "era_id": "era-hometown",
+          "geo": {
+            "lat": 35.016,
+            "lng": 126.7108,
+            "display_name": "전남 나주시",
+            "source": "fixture"
+          },
+          "distance_km_from_last_seen": 20.5,
+          "score": 0.72,
+          "score_parts": {
+            "era_match": 1,
+            "reachability": 0.8,
+            "confidence": 0.9
+          },
+          "why": "Hometown."
+        }
+      ],
+      "send_first": [],
+      "finder_card": {
+        "ko": [
+          "따지지 마세요.",
+          "\"고향 가세요? 같이 가요.\"",
+          "천천히, 옆에서 걸어 주세요."
+        ],
+        "en": [
+          "Don't argue.",
+          "\"Going home? Let's go together.\"",
+          "Walk slowly, beside him."
+        ]
+      }
+    }
+  }
 }

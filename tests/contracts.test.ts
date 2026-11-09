@@ -10,8 +10,9 @@ describe("fixtures and data match the frozen contract", () => {
     EraEstimate.parse(read("fixtures/era_estimate.json"));
     LifeProfile.parse(read("fixtures/life_profile.json"));
     Plan.parse(read("fixtures/plan.json"));
-    RevealMetrics.parse(read("fixtures/reveal.json"));
-    ReplayRun.parse(read("fixtures/replay_run.json"));
+    for (const r of Object.values(read("fixtures/reveal.json"))) RevealMetrics.parse(r);
+    const runs = read("fixtures/replay_run.json");
+    for (const id of ["hook-1962", "replay-srt", "replay-naju"]) expect(ReplayRun.parse(runs[id]).case_id).toBe(id);
     for (const e of read("fixtures/era_imagery.json")) EraImagery.parse(e);
   });
   it("data", () => {

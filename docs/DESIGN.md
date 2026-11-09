@@ -10,7 +10,7 @@ Deliverable = a 90-second screen-recorded video + this repo. Every screen in the
 2. **Hero replay (case `replay-srt`)** — report words + hometown → era/intent → plan: gray radius circle around home vs hometown pin far outside it + "Send first" departure hubs (train icon, "proposed, verify"). Visible on-screen note from `profile_hometown_provenance`. "Reveal" → found pin + distances computed from coordinates.
 3. **Second replay (case `replay-naju`)** — circle around Gwangju home vs Naju hometown. Reveal → "found X km from home · Y km from Ribot #1" (computed). Footer: "Replays of published cases; not an accuracy claim."
 4. **Then / Now** — for a place with imagery, a drag-to-compare panel: 1970s aerial photo vs today's, same viewport, same public source (국토지리정보원 국토정보플랫폼). Opens from the map pin or automatically after an era result in present mode.
-5. **Family profile ("Fill it once")** — record or upload 3-min audio (or paste text) → transcript → LifeProfile timeline → decade slider moves pins between eras. Optional local-only family photo inside Then/Now.
+5. **Family profile ("Fill it once")** — upload a 3-min audio file recorded on a phone (or paste text) → transcript → LifeProfile timeline → decade slider moves pins between eras. Optional local-only family photo inside Then/Now. No in-browser recorder.
 6. **Deck `/deck`** — 7 slides (story: empathy → numbers → evidence → product), arrow keys, numbers only from `data/numbers.json`, plus a live counter: "Since 9:00 AM today: ~N reports in Korea" using K1-rate (one report every 31.7 min on average; label it "on average").
 
 ## Data flow
@@ -22,6 +22,13 @@ Deliverable = a 90-second screen-recorded video + this repo. Every screen in the
 - `POST /api/replay/run` `{ case_id }` → ReplayRun. Profile is built deterministically from case fields (hometown / past residence), never by the LLM. Hook case → era only, profile/plan null. Last seen = case `home` geocoded at city level; label it "city-level".
 - `POST /api/replay/reveal` `{ case_id, plan }` → RevealMetrics using `lib/metrics.ts`. Also write `results/replay_<id>.json` (gitignored).
 - `GET /api/imagery` → EraImagery[] (public + local-only).
+
+## Frozen rules for replays and scores (design review 10:10)
+- Replay assembly (B): `now_year` = year of case `date` if present, else 2026. If the case has no `her_words` and no `report_words`, skip the LLM and use an EraEstimate with all nulls and intent "unknown" (Naju). `elapsed_hours` = 1, and the circle `assumption` says "demo elapsed time 1 h".
+- Candidates: places of eras overlapping `living_in.year_range`; if year_range is null or an era has null years, the era counts as overlapping. `person.hometown` is always a candidate (geocoded) even with no era match.
+- Score = era_match × reachability × confidence. era_match = 1 if the era overlaps, else 0.3. reachability = 1 within 5 km; beyond 5 km = 0.8 if intent is going_home/going_to_work, else max(0.2, 1 − km/300). D shows `score_parts` in the tooltip.
+- Hook reveal is local UI (family_words[0] + source link); `api.reveal` is only for cases with a plan.
+- Finder card is static copy chosen by intent (no LLM call).
 - Browser code calls only `lib/api.ts`. `?mock=1` = fixtures, no keys needed. `?present=1` = recording mode (no dev chrome, large type).
 
 ## Ownership (one writer per path)

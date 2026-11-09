@@ -16,14 +16,23 @@ async function post<T>(url: string, body: unknown): Promise<T> {
   return r.json() as Promise<T>;
 }
 
+/** Mock geocoding keeps the given profile and fills geo only for places whose id matches the fixture. */
+function mockGeocode(p: LifeProfile): LifeProfile {
+  const known = new Map((profileFx as LifeProfile).eras.flatMap((e) => e.places).map((pl) => [pl.id, pl.geo]));
+  return { ...p, eras: p.eras.map((e) => ({ ...e, places: e.places.map((pl) => ({ ...pl, geo: pl.geo ?? known.get(pl.id) ?? null })) })) };
+}
+
 export const api = {
   era: (b: EraInput) => (isMock() ? Promise.resolve(eraFx as EraEstimate) : post<EraEstimate>("/api/era", b)),
   profile: (b: ProfileInput) => (isMock() ? Promise.resolve(profileFx as LifeProfile) : post<LifeProfile>("/api/profile", b)),
-  geocodeProfile: (p: LifeProfile) => (isMock() ? Promise.resolve(profileFx as LifeProfile) : post<LifeProfile>("/api/geocode", { profile: p })),
+  geocodeProfile: (p: LifeProfile) => (isMock() ? Promise.resolve(mockGeocode(p)) : post<LifeProfile>("/api/geocode", { profile: p })),
   plan: (b: PlanInput) => (isMock() ? Promise.resolve(planFx as Plan) : post<Plan>("/api/plan", b)),
   cases: async (): Promise<ReplayCase[]> => (cases as { cases: ReplayCase[] }).cases,
-  replayRun: (case_id: string) => (isMock() ? Promise.resolve(runFx as ReplayRun) : post<ReplayRun>("/api/replay/run", { case_id })),
-  reveal: (case_id: string, plan: Plan) => (isMock() ? Promise.resolve({ ...(revealFx as RevealMetrics), case_id }) : post<RevealMetrics>("/api/replay/reveal", { case_id, plan })),
+  replayRun: (case_id: string) =>
+    isMock() ? Promise.resolve((runFx as unknown as Record<string, ReplayRun>)[case_id]) : post<ReplayRun>("/api/replay/run", { case_id }),
+  /** Geographic replays only (plan != null). The hook case reveal is local UI: family_words[0] + source_url. */
+  reveal: (case_id: string, plan: Plan) =>
+    isMock() ? Promise.resolve((revealFx as unknown as Record<string, RevealMetrics>)[case_id]) : post<RevealMetrics>("/api/replay/reveal", { case_id, plan }),
   imagery: async (): Promise<EraImagery[]> => {
     if (isMock()) return imageryFx as EraImagery[];
     const r = await fetch("/api/imagery");
