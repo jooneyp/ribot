@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import numbersData from "@/data/numbers.json";
-import type { Candidate, EraImagery, LifeProfile, ReplayRun, RevealMetrics } from "@/lib/contracts";
+import type { Candidate, CluesResult, EraImagery, LifeProfile, ReplayRun, RevealMetrics } from "@/lib/contracts";
 import HighlightedWords from "./HighlightedWords";
 import ProfileSummary from "./ProfileSummary";
 
@@ -19,6 +19,7 @@ type TextReveal = {
   place: string;
   placeEn: string;
   time: string;
+  distanceNote?: string;
   sourceUrl: string;
   sourceNote: string;
 };
@@ -56,11 +57,19 @@ type Props = {
   error: string | null;
   thenNow: EraImagery[];
   textReveal: TextReveal | null;
+  clues: CluesResult | null;
+  phoneStep: {
+    words: string[];
+    translations: string[];
+    provenance: string;
+    towerNote: string;
+  } | null;
   onThenNow: (id: string) => void;
   onReveal: () => void;
+  onFindClues: () => void;
 };
 
-export default function ResultPanel({ run, reveal, profile, words, wordTranslations, showWordEvidence, possessivePronoun, busy, error, thenNow, textReveal, onThenNow, onReveal }: Props) {
+export default function ResultPanel({ run, reveal, profile, words, wordTranslations, showWordEvidence, possessivePronoun, busy, error, thenNow, textReveal, clues, phoneStep, onThenNow, onReveal, onFindClues }: Props) {
   const metricsRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -129,7 +138,52 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
         <span className="section-label">Intent</span>
         <strong className="intent">{sentenceCase(era.intent)}</strong>
       </section>
-      {plan && !reveal && !textReveal?.revealed && <button className="primary reveal-button" onClick={onReveal}>Reveal</button>}
+      {plan && phoneStep && (
+        <section className="result-section phone-call-step">
+          <div className="phone-call-grid">
+            <div className="picked-up-card">
+              <span className="section-label">She picked up</span>
+              {phoneStep.words.map((word, index) => (
+                <div className="phone-words" key={word}>
+                  <p lang="ko">“{word}”</p>
+                  {phoneStep.translations[index] && <p className="quote-subtitle">{phoneStep.translations[index]}</p>}
+                </div>
+              ))}
+              {phoneStep.provenance && <small className="phone-provenance">{phoneStep.provenance}</small>}
+              {phoneStep.towerNote && <p className="tower-note">{phoneStep.towerNote}</p>}
+            </div>
+            <div className="ask-her-card">
+              <span className="section-label">Ask her (don&apos;t argue)</span>
+              <p><span lang="ko">지금 뭐가 보이세요?</span><small>What can you see?</small></p>
+              <p><span lang="ko">건너편에 뭐가 있어요?</span><small>What is across the street?</small></p>
+              <p><span lang="ko">어디 가시는 길이세요?</span><small>Where are you heading?</small></p>
+            </div>
+          </div>
+          {!clues ? (
+            <button className="primary clue-button" onClick={onFindClues}>Find her words on the map <span>→</span></button>
+          ) : (
+            <div className="clue-results">
+              <p className="clue-summary">
+                {clues.radius_km} km radius → {clues.spots.length} places matching &apos;{clues.landmarks[0]?.keyword ?? "her words"}&apos;
+              </p>
+              <ol className="clue-spots">
+                {clues.spots.map((spot, index) => (
+                  <li key={`${spot.name}-${spot.keyword}`}>
+                    <span className="clue-number">{index + 1}</span>
+                    <div>
+                      <b>{spot.name}</b>
+                      <span>matches: {spot.keyword}</span>
+                      <span>next to: {spot.near.length ? spot.near.join(", ") : "—"}</span>
+                    </div>
+                    <strong>{km(spot.distance_km)}</strong>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </section>
+      )}
+      {plan && !reveal && !textReveal?.revealed && (!phoneStep || clues) && <button className="primary reveal-button" onClick={onReveal}>Reveal</button>}
       {thenNow.length > 0 && (
         <section className="result-section">
           {thenNow.map((image) => (
@@ -228,6 +282,7 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
           <p className="text-reveal-time" lang="ko">{textReveal.time}</p>
           <p className="text-reveal-place" lang="ko">{textReveal.place}</p>
           <p className="quote-subtitle">{textReveal.placeEn}</p>
+          {textReveal.distanceNote && <p className="text-reveal-distance" lang="ko">{textReveal.distanceNote}</p>}
           <a href={textReveal.sourceUrl} target="_blank" rel="noreferrer">Source: {textReveal.sourceNote} ↗</a>
         </section>
       )}

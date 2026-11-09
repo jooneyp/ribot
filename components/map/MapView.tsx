@@ -73,7 +73,7 @@ function RadiusCircle({ center, radiusKm, label }: { center: LatLng; radiusKm: n
 
 const distanceLabel = (distance: number) => distance < 10 ? `${distance.toFixed(1)} km` : `${Math.round(distance)} km`;
 
-export default function MapView({ plan, profile, decade, reveal, imagery, onSelectImagery, present = false }: MapViewProps) {
+export default function MapView({ plan, profile, decade, reveal, imagery, onSelectImagery, present = false, clues }: MapViewProps) {
   const profilePlaces = useMemo(() => (profile?.eras ?? []).flatMap((era, eraIndex) =>
     era.places.filter((place) => place.geo).map((place) => ({
       era, eraIndex, place, geo: place.geo!, visible: eraOverlapsDecade(era.start_year, era.end_year, decade),
@@ -86,7 +86,15 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
 
   const bounds = useMemo<LatLngExpression[]>(() => {
     const points: LatLngExpression[] = [];
-    if (plan) {
+    if (clues) {
+      const latitudeRadius = clues.radius_km / 111.32;
+      const longitudeRadius = latitudeRadius / Math.max(0.1, Math.cos(clues.center.lat * Math.PI / 180));
+      points.push(...clues.spots.map((spot) => [spot.geo.lat, spot.geo.lng] as LatLngTuple));
+      points.push(
+        [clues.center.lat + latitudeRadius, clues.center.lng + longitudeRadius],
+        [clues.center.lat - latitudeRadius, clues.center.lng - longitudeRadius],
+      );
+    } else if (plan) {
       points.push([plan.last_seen.geo.lat, plan.last_seen.geo.lng]);
       points.push(...plan.candidates.map((candidate) => [candidate.geo.lat, candidate.geo.lng] as LatLngTuple));
       points.push(...plan.send_first.filter((hub) => hub.geo).map((hub) => [hub.geo!.lat, hub.geo!.lng] as LatLngTuple));
@@ -99,7 +107,7 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
     } else points.push(...profilePlaces.map(({ geo }) => [geo.lat, geo.lng] as LatLngTuple));
     if (reveal) points.push([reveal.found.geo.lat, reveal.found.geo.lng]);
     return points;
-  }, [plan, profilePlaces, reveal]);
+  }, [clues, plan, profilePlaces, reveal]);
 
   const topCandidate = plan?.candidates.find((candidate) => candidate.rank === 1);
   const route = plan && topCandidate ? [[plan.last_seen.geo.lat, plan.last_seen.geo.lng], [topCandidate.geo.lat, topCandidate.geo.lng]] as LatLngTuple[] : null;
@@ -115,15 +123,16 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
       <MapContainer bounds={KOREA_BOUNDS} boundsOptions={{ padding: [28, 28] }} zoomControl={!present} attributionControl={false} className="h-full w-full">
         <TileLayer attribution='&copy; OpenStreetMap contributors &copy; CARTO' url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
         <FitBounds points={bounds} />
-        {plan && <RadiusCircle center={plan.circle.center} radiusKm={plan.circle.radius_km} label={plan.circle.label} />}
-        {route && <Polyline positions={route} pathOptions={{ color: "#f0f1eb", dashArray: "10 12", opacity: 0.9, weight: present ? 4 : 3 }}><Tooltip permanent direction="center" className="ribot-distance-label">{distanceLabel(routeDistance!)}</Tooltip></Polyline>}
+        {clues ? <RadiusCircle center={clues.center} radiusKm={clues.radius_km} label="Phone area" /> : plan && <RadiusCircle center={plan.circle.center} radiusKm={plan.circle.radius_km} label={plan.circle.label} />}
+        {!clues && route && <Polyline positions={route} pathOptions={{ color: "#f0f1eb", dashArray: "10 12", opacity: 0.9, weight: present ? 4 : 3 }}><Tooltip permanent direction="center" className="ribot-distance-label">{distanceLabel(routeDistance!)}</Tooltip></Polyline>}
         {reveal && nearestCandidate && <Polyline positions={[[reveal.found.geo.lat, reveal.found.geo.lng], [nearestCandidate.geo.lat, nearestCandidate.geo.lng]]} pathOptions={{ className: "ribot-reveal-line", color: "#ff7058", weight: 2, opacity: 0.9 }}><Tooltip permanent direction="right" offset={[78, 0]} className="ribot-reveal-distance-label">{distanceLabel(nearestDistance!)}</Tooltip></Polyline>}
-        {plan && <Marker position={[plan.last_seen.geo.lat, plan.last_seen.geo.lng]} icon={pinIcon({ kind: "home", label: "", present })} zIndexOffset={500}><Tooltip permanent direction="left" className="ribot-pin-label ribot-last-seen-label"><strong>Last seen</strong> · {plan.last_seen.label}</Tooltip></Marker>}
-        {candidates.map((candidate) => {
+        {!clues && plan && <Marker position={[plan.last_seen.geo.lat, plan.last_seen.geo.lng]} icon={pinIcon({ kind: "home", label: "", present })} zIndexOffset={500}><Tooltip permanent direction="left" className="ribot-pin-label ribot-last-seen-label"><strong>Last seen</strong> · {plan.last_seen.label}</Tooltip></Marker>}
+        {!clues && candidates.map((candidate) => {
           const matched = imageryFor(candidate.geo, imagery);
           return <Marker key={`candidate-${candidate.rank}-${candidate.place_id}`} position={[candidate.geo.lat, candidate.geo.lng]} icon={pinIcon({ kind: "candidate", label: String(candidate.rank), badge: !!matched, present })} eventHandlers={matched && onSelectImagery ? { click: () => onSelectImagery(matched.id) } : undefined} zIndexOffset={300 - candidate.rank}><Tooltip permanent={candidate.rank <= 3} direction="right" className={`ribot-pin-label${candidate.rank === 1 ? " ribot-rank-one-label" : ""}`}><strong>#{candidate.rank} {candidate.name}</strong><br />{distanceLabel(candidate.distance_km_from_last_seen)} from last seen</Tooltip></Marker>;
         })}
-        {hubs.map((hub, index) => <Marker key={`hub-${hub.name}-${index}`} position={[hub.geo!.lat, hub.geo!.lng]} icon={pinIcon({ kind: "hub", label: "", present })} zIndexOffset={400}><Tooltip direction="right" className="ribot-pin-label ribot-hub-label"><strong>Send first: {hub.name}</strong><br />{hub.line ? `${hub.line} · ` : ""}{hub.label}</Tooltip></Marker>)}
+        {!clues && hubs.map((hub, index) => <Marker key={`hub-${hub.name}-${index}`} position={[hub.geo!.lat, hub.geo!.lng]} icon={pinIcon({ kind: "hub", label: "", present })} zIndexOffset={400}><Tooltip direction="right" className="ribot-pin-label ribot-hub-label"><strong>Send first: {hub.name}</strong><br />{hub.line ? `${hub.line} · ` : ""}{hub.label}</Tooltip></Marker>)}
+        {clues?.spots.map((spot, index) => <Marker key={`clue-${spot.name}-${spot.keyword}`} position={[spot.geo.lat, spot.geo.lng]} icon={pinIcon({ kind: "candidate", label: String(index + 1), present })} zIndexOffset={600 - index}><Tooltip permanent={index === 0} direction="right" className="ribot-pin-label ribot-clue-label"><strong>#{index + 1} {spot.name}</strong><br />{spot.keyword} · {distanceLabel(spot.distance_km)}{spot.near.length > 0 && <><br />next to: {spot.near.join(", ")}</>}</Tooltip></Marker>)}
         {!plan && profilePlaces.map(({ era, eraIndex, place, geo, visible }) => {
           const matched = imageryFor(geo, imagery);
           return <Marker key={`${era.id}-${place.id}`} position={[geo.lat, geo.lng]} opacity={visible ? 1 : 0.22} icon={pinIcon({ kind: "place", label: String(eraIndex + 1), color: ERA_COLORS[eraIndex % ERA_COLORS.length], badge: !!matched, muted: !visible, present })} eventHandlers={matched && onSelectImagery ? { click: () => onSelectImagery(matched.id) } : undefined} zIndexOffset={visible ? 200 : 0}><Tooltip key={String(visible)} permanent={visible} direction="right" className="ribot-pin-label"><strong>{place.name_then}</strong><br />{era.label} · {era.start_year ?? "unknown"}–{era.end_year ?? "unknown"}</Tooltip></Marker>;

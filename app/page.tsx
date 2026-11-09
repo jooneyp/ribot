@@ -7,7 +7,7 @@ import ThenNow from "@/components/map/ThenNow";
 import HookStage from "@/components/panels/HookStage";
 import ResultPanel, { unknown } from "@/components/panels/ResultPanel";
 import { api } from "@/lib/api";
-import type { EraImagery, LatLng, LifeProfile, ReplayCase, ReplayRun, RevealMetrics } from "@/lib/contracts";
+import type { CluesResult, EraImagery, LatLng, LifeProfile, ReplayCase, ReplayRun, RevealMetrics } from "@/lib/contracts";
 
 const MapView = dynamic(() => import("@/components/map/MapView"), { ssr: false });
 
@@ -16,20 +16,30 @@ type CaseWithSubtitles = ReplayCase & {
   her_words_en?: string[];
   family_words_en?: string[];
   report_words_en?: string | null;
+  before_leaving_words?: string[];
+  before_leaving_words_en?: string[];
+  phone_words?: string[];
+  phone_words_en?: string[];
+  phone_words_provenance?: string;
+  tower_area_query?: string;
+  tower_radius_km?: number;
+  tower_note?: string;
   search_note_en?: string;
   reveal_mode?: "text";
   found: ReplayCase["found"] & {
     place_en?: string;
     time?: string;
+    distance_from_home_note?: string;
   };
 };
 const HOOK_ID = "hook-1962";
 const SEARCH_MANUAL_RADIUS_KM = 12.6;
 const SEARCH_MANUAL_ASSUMPTION = "95% of urban dementia searches end within 12.6 km (Koester, Lost Person Behavior, n=336)";
-const CASE_ORDER = ["hook-1962", "replay-srt", "replay-naju", "replay-uijeongbu"];
+const CASE_ORDER = ["hook-1962", "replay-srt", "replay-bulgwang", "replay-uijeongbu", "replay-naju"];
 const CASE_TITLES: Record<string, string> = {
   "hook-1962": "The question",
   "replay-srt": "The station",
+  "replay-bulgwang": "She picked up",
   "replay-naju": "The hometown",
   "replay-uijeongbu": "Near home",
 };
@@ -90,6 +100,7 @@ export default function Home() {
   const [imagery, setImagery] = useState<EraImagery[]>([]);
   const [run, setRun] = useState<ReplayRun | null>(null);
   const [reveal, setReveal] = useState<RevealMetrics | null>(null);
+  const [clues, setClues] = useState<CluesResult | null>(null);
   const [typed, setTyped] = useState<string[]>([]);
   const [typingDone, setTypingDone] = useState(false);
   const [revealReady, setRevealReady] = useState(false);
@@ -120,7 +131,7 @@ export default function Home() {
   }, []);
 
   const resetRun = useCallback(() => {
-    setRun(null); setReveal(null); setError(null); setHookRevealed(false); setTextRevealed(false); setRevealReady(false); setOpenImagery(null);
+    setRun(null); setReveal(null); setClues(null); setError(null); setHookRevealed(false); setTextRevealed(false); setRevealReady(false); setOpenImagery(null);
   }, []);
 
   // Reset on tab/case change.
@@ -213,6 +224,23 @@ export default function Home() {
     }
   }, [isTextReveal, run]);
 
+  const findClues = useCallback(async () => {
+    if (!selectedCase?.phone_words?.length || !selectedCase.tower_area_query || selectedCase.tower_radius_km == null) return;
+    setBusy("Finding her words on the map…");
+    try {
+      const result = await api.clues({
+        words: selectedCase.phone_words,
+        center_query: selectedCase.tower_area_query,
+        radius_km: selectedCase.tower_radius_km,
+      });
+      setClues(result);
+    } catch (e) {
+      setError(message(e, "Could not find her words on the map."));
+    } finally {
+      setBusy(null);
+    }
+  }, [selectedCase]);
+
   // Present mode: arrows choose a replay; Space advances its current step.
   useEffect(() => {
     if (!present) return;
@@ -235,11 +263,12 @@ export default function Home() {
       } else if (tab === "profile") {
         if (!profile) void buildProfile();
       } else if (!run) void runEra();
+      else if (run.plan && selectedCase?.phone_words?.length && !clues) void findClues();
       else if (run.plan && !reveal && !textRevealed) void doReveal();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [busy, buildProfile, cases, doReveal, hookRevealed, isHook, present, profile, reveal, revealReady, run, runEra, selectedId, tab, textRevealed, typingDone]);
+  }, [busy, buildProfile, cases, clues, doReveal, findClues, hookRevealed, isHook, present, profile, reveal, revealReady, run, runEra, selectedCase, selectedId, tab, textRevealed, typingDone]);
 
   const decades = useMemo(() => {
     const years = profile?.eras.flatMap((e) => [e.start_year, e.end_year]).filter((y): y is number => y != null) ?? [];
@@ -311,6 +340,13 @@ export default function Home() {
                       {selectedCase.report_words_en && <span className="quote-subtitle">{selectedCase.report_words_en}</span>}
                     </p>
                   )}
+                  {selectedCase.before_leaving_words?.map((word, index) => (
+                    <p className="before-leaving-input" key={word}>
+                      <small>Before {selectedPronouns.subject} left {selectedPronouns.subject} kept saying</small>
+                      <span lang="ko">“{word}”</span>
+                      {selectedCase.before_leaving_words_en?.[index] && <span className="quote-subtitle">{selectedCase.before_leaving_words_en[index]}</span>}
+                    </p>
+                  ))}
                   {selectedCase.search_note_en && (
                     <p className="search-note-input">
                       <small>Search assumption before she was found</small>
@@ -392,6 +428,7 @@ export default function Home() {
                 profile={mapProfile}
                 decade={tab === "profile" ? decade : null}
                 reveal={reveal}
+                clues={clues}
                 imagery={imagery}
                 onSelectImagery={setOpenImagery}
                 present={present}
@@ -461,11 +498,20 @@ export default function Home() {
           thenNow={tab === "profile" ? [] : thenNow}
           onThenNow={setOpenImagery}
           onReveal={() => void doReveal()}
+          onFindClues={() => void findClues()}
+          clues={clues}
+          phoneStep={selectedCase?.phone_words?.length ? {
+            words: selectedCase.phone_words,
+            translations: selectedCase.phone_words_en ?? [],
+            provenance: selectedCase.phone_words_provenance ?? "",
+            towerNote: selectedCase.tower_note ?? "",
+          } : null}
           textReveal={isTextReveal && selectedCase ? {
             revealed: textRevealed,
             place: selectedCase.found.place,
             placeEn: selectedCase.found.place_en ?? "Translation unavailable.",
             time: selectedCase.found.time ?? "unknown",
+            distanceNote: selectedCase.found.distance_from_home_note,
             sourceUrl: selectedCase.source_url,
             sourceNote: selectedCase.source_note,
           } : null}

@@ -51,6 +51,7 @@ h1 span { color: var(--muted); font-weight: 450; }
 .case-input p { margin: 0; display: flex; flex-direction: column; gap: 6px; font-size: 20px; line-height: 1.45; }
 .case-input small { color: var(--muted); font-size: 18px; }
 .search-note-input { padding: 10px 12px; border-left: 3px solid var(--accent); background: #20241f; }
+.before-leaving-input { padding: 10px 12px; border-left: 3px solid #697061; background: #20241f; }
 .provenance { border-left: 3px solid var(--accent); padding: 10px 0 10px 12px; color: var(--muted); font-size: 18px; line-height: 1.5; background: #1d2119; }
 .provenance b { color: var(--text); display: block; margin-bottom: 4px; }
 label { color: var(--muted); font-size: 18px; display: flex; flex-direction: column; gap: 8px; }
@@ -165,7 +166,33 @@ input { height: 44px; }
 .text-reveal-card { border-color: var(--accent); }
 .text-reveal-time { margin: 12px 0 8px !important; color: var(--accent); font-size: 28px !important; font-weight: 800; }
 .text-reveal-place { margin: 0 0 8px !important; font-size: 25px !important; font-weight: 700; }
+.text-reveal-distance { color: var(--muted); }
 .text-reveal-card > a { display: inline-block; margin-top: 12px; color: var(--text); font-size: 18px; }
+.phone-call-step { display: flex; flex-direction: column; gap: 12px; }
+.phone-call-grid { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr); gap: 10px; }
+.picked-up-card, .ask-her-card { min-width: 0; padding: 12px; border: 1px solid var(--line); background: #20241f; }
+.picked-up-card { border-left: 3px solid var(--accent); }
+.phone-words { margin: 10px 0; }
+.phone-words p { margin: 0; font-size: 20px; line-height: 1.35; }
+.phone-words .quote-subtitle { margin-top: 4px; font-size: 18px !important; }
+.phone-provenance { display: block; color: var(--muted); font-size: 16px; line-height: 1.4; }
+.tower-note { margin: 10px 0 0; color: var(--muted); font-size: 18px; line-height: 1.4; }
+.ask-her-card .section-label { display: block; margin-bottom: 8px; }
+.ask-her-card p { margin: 0; padding: 7px 0; border-top: 1px solid var(--line); }
+.ask-her-card p span, .ask-her-card p small { display: block; }
+.ask-her-card p span { font-size: 18px; font-weight: 650; line-height: 1.35; }
+.ask-her-card p small { margin-top: 2px; color: var(--muted); font-size: 16px; line-height: 1.3; }
+.clue-button { width: 100%; min-height: 62px; font-size: 18px; }
+.clue-results { display: flex; flex-direction: column; gap: 9px; }
+.clue-summary { margin: 0; padding: 10px; color: var(--text); background: #2b3027; border-left: 3px solid var(--accent); font-size: 18px; line-height: 1.35; }
+.clue-spots { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.clue-spots li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 8px; border: 1px solid var(--line); }
+.clue-number { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; color: #15180f; background: var(--accent); font-weight: 800; }
+.clue-spots li div { min-width: 0; }
+.clue-spots li b, .clue-spots li span { display: block; }
+.clue-spots li b { font-size: 18px; }
+.clue-spots li div span { margin-top: 2px; color: var(--muted); font-size: 16px; line-height: 1.3; }
+.clue-spots li > strong { color: var(--accent); font-size: 16px; white-space: nowrap; }
 .place-list { margin: 10px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
 .place-list li { display: flex; flex-direction: column; gap: 3px; }
 .place-list b { font-size: 17px; }
