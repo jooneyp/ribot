@@ -1,1 +1,21 @@
-[]
+[
+  {
+    "id": "pyeonghwa",
+    "place_label": "평화시장 · 청계천 (Dongdaemun)",
+    "center": {
+      "lat": 37.5689,
+      "lng": 127.0094
+    },
+    "then": {
+      "year": 1972,
+      "src": "/era/pyeonghwa_1972.jpg"
+    },
+    "now": {
+      "year": 2022,
+      "src": "/era/pyeonghwa_2022.jpg"
+    },
+    "photo": null,
+    "source": "National Geographic Information Institute (국토지리정보원) map platform — 1972 Seoul City aerial (서울특별시청 1972년 1차) / 2022 25cm aerial",
+    "source_url": "https://map.ngii.go.kr/ms/map/NlipMap.do"
+  }
+]
