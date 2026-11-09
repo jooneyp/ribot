@@ -135,12 +135,13 @@ function CameraTour({ enabled, points, lastSeen, routes }: {
       map.flyToBounds(overview, { padding: [100, 100], maxZoom: 13, duration: 2 });
       await wait(2000); await tilesLoaded(map);
       if (cancelled) return;
-      map.flyTo(lastSeen, 16, { duration: 2 });
+      map.flyTo(lastSeen, 17, { duration: 2 });
       await wait(2000); await tilesLoaded(map);
+      // Follow the walked line at a fixed zoom: panning keeps lines crisp (zooming rescales them mid-flight).
       for (const point of follow) {
         if (cancelled) return;
-        map.flyTo(point, 17, { duration: 1 });
-        await wait(1000); await tilesLoaded(map, 1500);
+        map.panTo(point, { animate: true, duration: 1.2, easeLinearity: 1 });
+        await wait(1200); await tilesLoaded(map, 1500);
       }
       if (cancelled) return;
       map.flyTo([route.reach.point.lat, route.reach.point.lng], 18, { duration: 2 });

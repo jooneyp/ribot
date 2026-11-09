@@ -180,7 +180,7 @@ export async function buildPlan(input: PlanInput, assumption = MANUAL_RING): Pro
     send_first: sendFirst,
     finder_card: FINDER_CARDS[input.era.intent],
     hazards,
-    hazard_ring_km: HAZARD_RING_KM,
+    hazard_ring_km: input.last_seen.label.includes("(city-level)") ? undefined : HAZARD_RING_KM,
     check_order: checkOrder,
   };
 }

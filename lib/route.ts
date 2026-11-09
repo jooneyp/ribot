@@ -82,6 +82,8 @@ function cctvsAlong(walked: [number, number][]): Cctv[] {
 /** Up to 3 walking routes: the top places within 15 km, or the first send-first hub when the top place is far. */
 export async function buildRoutes(plan: Plan, elapsedHours: number): Promise<RoutesResult> {
   const origin = plan.last_seen.geo;
+  // A city-level last seen (e.g. 'Seoul') is a city centre, not a street: walking routes from it would be fiction.
+  if (plan.last_seen.label.includes("(city-level)")) return { walk_kmh: WALK_KMH, elapsed_hours: elapsedHours, routes: [] };
   type Target = { id: string; name: string; rank: number; layer: RouteResult["layer"]; geo: LatLng };
   const targets: Target[] = [];
   for (const c of plan.candidates) {
