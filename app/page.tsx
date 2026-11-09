@@ -1,12 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import sampleFamily from "@/data/samples/family_sample.json";
 import Recorder from "@/components/Recorder";
 import ThenNow from "@/components/map/ThenNow";
 import HookStage from "@/components/panels/HookStage";
-import ResultPanel, { unknown } from "@/components/panels/ResultPanel";
+import ResultPanel from "@/components/panels/ResultPanel";
 import { api } from "@/lib/api";
 import type { CluesResult, EraImagery, LatLng, LifeProfile, ReplayCase, ReplayRun, RevealMetrics } from "@/lib/contracts";
 
@@ -14,6 +14,8 @@ const MapView = dynamic(() => import("@/components/map/MapView"), { ssr: false }
 
 type Tab = "replay" | "words" | "profile";
 type CaseWithSubtitles = ReplayCase & {
+  home_en?: string | null;
+  source_note_en?: string;
   her_words_en?: string[];
   family_words_en?: string[];
   report_words_en?: string | null;
@@ -30,7 +32,10 @@ type CaseWithSubtitles = ReplayCase & {
   found: ReplayCase["found"] & {
     place_en?: string;
     time?: string;
+    time_en?: string;
     distance_from_home_note?: string;
+    distance_from_home_note_en?: string;
+    near_water?: boolean;
   };
 };
 const HOOK_ID = "hook-1962";
@@ -82,6 +87,16 @@ const pronouns = (sex: string | null | undefined) => sex === "M"
   : sex === "F"
     ? { subject: "she", possessive: "her", contraction: "she's" }
     : { subject: "they", possessive: "their", contraction: "they're" };
+const knownText = (value: string | null | undefined) => {
+  const text = value?.trim();
+  return text && text.toLowerCase() !== "unknown" ? text : null;
+};
+const yearRange = (start: number | null, end: number | null) => {
+  if (start != null && end != null) return `${start}–${end}`;
+  if (start != null) return `${start}–now`;
+  if (end != null) return `until ${end}`;
+  return null;
+};
 
 /** Imagery whose `then.year` ± 15 overlaps the year range and that has a point within ~15 km of its center. */
 function imageryNear(imagery: EraImagery[], range: [number | null, number | null], points: LatLng[]) {
@@ -117,9 +132,13 @@ export default function Home() {
   const [openImagery, setOpenImagery] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const replayPanelRef = useRef<HTMLDivElement>(null);
 
   const selectedCase = cases.find((c) => c.id === selectedId) ?? null;
   const selectedPronouns = pronouns(selectedCase?.sex);
+  const selectedHome = knownText(selectedCase?.home_en) ?? knownText(selectedCase?.home);
+  const selectedHometown = knownText(selectedCase?.profile_hometown);
+  const selectedSourceNote = knownText(selectedCase?.source_note_en) ?? knownText(selectedCase?.source_note) ?? "Published source";
   const isHook = tab === "replay" && selectedId === HOOK_ID;
   const isTextReveal = tab === "replay" && selectedCase?.reveal_mode === "text";
   const imageryItem = imagery.find((i) => i.id === openImagery) ?? null;
@@ -132,6 +151,10 @@ export default function Home() {
       .catch((e) => setError(message(e, "Could not load cases.")));
     api.imagery().then((list) => setImagery(Array.isArray(list) ? list : [])).catch(() => setImagery([]));
   }, []);
+
+  useEffect(() => {
+    if (present) replayPanelRef.current?.scrollTo({ top: 0 });
+  }, [present, selectedId]);
 
   const resetRun = useCallback(() => {
     setRun(null); setReveal(null); setClues(null); setError(null); setHookRevealed(false); setTextRevealed(false); setRevealReady(false); setOpenImagery(null);
@@ -172,7 +195,9 @@ export default function Home() {
 
   const runEra = useCallback(async () => {
     resetRun();
-    setBusy("Reading her words…");
+    setBusy(tab === "replay"
+      ? selectedCase?.her_words?.length ? `Reading ${selectedPronouns.possessive} words…` : "Reading the family's report…"
+      : "Reading her words…");
     try {
       if (tab === "replay") {
         const next = await api.replayRun(selectedId);
@@ -186,7 +211,7 @@ export default function Home() {
         const where = lastSeen.trim();
         if (profile && where) {
           setBusy("Building the search plan…");
-          const plan = await api.plan({ profile, era, last_seen: { label: `${where} (last seen)`, query: where }, elapsed_hours: 1 });
+          const plan = await api.plan({ profile, era, last_seen: { label: where, query: where }, elapsed_hours: 1 });
           setRun({ case_id: "her-words", era, profile, plan });
         } else {
           setRun({ case_id: "her-words", era, profile: null, plan: null });
@@ -197,7 +222,7 @@ export default function Home() {
     } finally {
       setBusy(null);
     }
-  }, [ageBand, lastSeen, profile, resetRun, selectedId, tab, wordsText]);
+  }, [ageBand, lastSeen, profile, resetRun, selectedCase, selectedId, selectedPronouns.possessive, tab, wordsText]);
 
   const buildProfile = useCallback(async () => {
     if (!profileText.trim()) { setError("Paste the family's words or choose an audio file."); return; }
@@ -237,7 +262,7 @@ export default function Home() {
 
   const findClues = useCallback(async () => {
     if (!selectedCase?.phone_words?.length || !selectedCase.tower_area_query || selectedCase.tower_radius_km == null) return;
-    setBusy("Finding her words on the map…");
+    setBusy(`Finding ${selectedPronouns.possessive} words on the map…`);
     try {
       const result = await api.clues({
         words: selectedCase.phone_words,
@@ -250,7 +275,7 @@ export default function Home() {
     } finally {
       setBusy(null);
     }
-  }, [selectedCase]);
+  }, [selectedCase, selectedPronouns.possessive]);
 
   // Present mode: arrows choose a replay; Space advances its current step.
   useEffect(() => {
@@ -307,7 +332,7 @@ export default function Home() {
   const mapProfile = tab === "profile" ? profile : run?.profile ?? null;
   const shownWords = tab === "words" ? lines(wordsText) : selectedCase?.her_words ?? (selectedCase?.report_words ? [selectedCase.report_words] : []);
   const shownWordsEn = tab === "words"
-    ? []
+    ? sampleLoaded ? sampleFamily.her_words_en : []
     : selectedCase?.her_words_en ?? (selectedCase?.report_words_en ? [selectedCase.report_words_en] : []);
 
   return (
@@ -331,7 +356,7 @@ export default function Home() {
           </nav>
 
           {tab === "replay" && (
-            <div className="panel-body">
+            <div className="panel-body" ref={replayPanelRef}>
               <div className="eyebrow">Published case replay</div>
               <div className="case-list">
                 {cases.map((c) => (
@@ -371,8 +396,8 @@ export default function Home() {
                       {selectedCase.family_words_en?.[0] && <span className="quote-subtitle">{selectedCase.family_words_en[0]}</span>}
                     </p>
                   )}
-                  <p><small>Home</small><span lang="ko">{unknown(selectedCase.home)}</span></p>
-                  <p><small>Hometown (family)</small><span lang="ko">{unknown(selectedCase.profile_hometown)}</span></p>
+                  {selectedHome && <p><small>Home</small><span>{selectedHome}</span></p>}
+                  {selectedHometown && <p><small>Hometown (family)</small><span lang="ko">{selectedHometown}</span></p>}
                 </div>
               )}
               {selectedCase?.profile_hometown_provenance && (
@@ -391,7 +416,7 @@ export default function Home() {
               <div className="eyebrow">What she is saying now</div>
               <label>
                 One utterance per line
-                <textarea value={wordsText} onChange={(e) => setWordsText(e.target.value)} placeholder={"여기 어디예요?\n친구는 취직했나?"} rows={8} lang="ko" />
+                <textarea value={wordsText} onChange={(e) => { setWordsText(e.target.value); setSampleLoaded(false); }} placeholder={"여기 어디예요?\n친구는 취직했나?"} rows={8} lang="ko" />
               </label>
               <label>
                 Age band
@@ -469,7 +494,7 @@ export default function Home() {
                       return (
                         <div key={era.id} className={active ? "active" : ""}>
                           <b>{era.label}</b>
-                          <span>{unknown(era.start_year)}–{unknown(era.end_year)}</span>
+                          {yearRange(era.start_year, era.end_year) && <span>{yearRange(era.start_year, era.end_year)}</span>}
                         </div>
                       );
                     })}
@@ -513,7 +538,11 @@ export default function Home() {
           )}
         </section>
 
-        <ResultPanel
+        {isHook && selectedCase ? (
+          <aside className="results">
+            <a href={selectedCase.source_url} target="_blank" rel="noreferrer">Source: {selectedSourceNote} ↗</a>
+          </aside>
+        ) : <ResultPanel
           run={run}
           reveal={reveal}
           profile={tab === "profile" ? profile : null}
@@ -535,23 +564,26 @@ export default function Home() {
             towerNote: selectedCase.tower_note ?? "",
           } : null}
           sampleLabel={null}
+          nearWater={selectedCase?.found.near_water === true}
           textReveal={isTextReveal && selectedCase ? {
             revealed: textRevealed,
-            place: selectedCase.found.place,
-            placeEn: selectedCase.found.place_en ?? "Translation unavailable.",
-            time: selectedCase.found.time ?? "unknown",
-            distanceNote: selectedCase.found.distance_from_home_note,
+            place: knownText(selectedCase.found.place) ?? "Published location",
+            placeEn: knownText(selectedCase.found.place_en) ?? undefined,
+            time: knownText(selectedCase.found.time) ?? undefined,
+            timeEn: knownText(selectedCase.found.time_en) ?? undefined,
+            distanceNote: knownText(selectedCase.found.distance_from_home_note) ?? undefined,
+            distanceNoteEn: knownText(selectedCase.found.distance_from_home_note_en) ?? undefined,
             sourceUrl: selectedCase.source_url,
-            sourceNote: selectedCase.source_note,
+            sourceNote: selectedSourceNote,
           } : null}
-        />
+        />}
       </section>
 
       <footer>
         {tab === "replay" && selectedCase ? (
           <>
             <span>Real case, published. Ribot runs it as a replay.</span>
-            <a href={selectedCase.source_url} target="_blank" rel="noreferrer">Source: {selectedCase.source_note} ↗</a>
+            <a href={selectedCase.source_url} target="_blank" rel="noreferrer">Source: {selectedSourceNote} ↗</a>
           </>
         ) : (
           <span>No phone. No GPS. Just her life and her words.</span>

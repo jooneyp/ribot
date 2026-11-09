@@ -4,6 +4,7 @@ import HighlightedWords from "./HighlightedWords";
 type HookCase = ReplayCase & {
   her_words_en?: string[];
   family_words_en?: string[];
+  source_note_en?: string;
 };
 
 type Props = {
@@ -26,18 +27,28 @@ function HighlightElapsed({ text, english = false }: { text: string; english?: b
 }
 
 function personDescription(ageBand: string | null | undefined, sex: string | null | undefined) {
-  const age = ageBand?.split(" (")[0] ?? "unknown age";
-  if (sex === "F") return `woman in her ${age}`;
-  if (sex === "M") return `man in his ${age}`;
-  return `person in their ${age}`;
+  const age = ageBand?.split(" (")[0];
+  if (sex === "F") return age ? `woman in her ${age}` : "woman";
+  if (sex === "M") return age ? `man in his ${age}` : "man";
+  return age ? `person in their ${age}` : "person";
+}
+
+function knownText(value: string | null | undefined) {
+  const text = value?.trim();
+  return text && text.toLowerCase() !== "unknown" ? text : null;
 }
 
 /** Hook scene: her words type out, Ribot guesses the era, then the family's words are revealed. */
 export default function HookStage({ hookCase, typed, typingDone, run, busy, revealReady, revealed, onAsk, onReveal }: Props) {
   const herWords = hookCase.her_words ?? [];
   const herWordsEn = hookCase.her_words_en ?? [];
-  const familyWord = hookCase.family_words?.[0] ?? "unknown";
+  const familyWord = knownText(hookCase.family_words?.[0]);
   const familyWordEn = hookCase.family_words_en?.[0] ?? "Translation unavailable.";
+  const livingIn = run?.era.living_in;
+  const livingInLabel = knownText(livingIn?.label);
+  const guessMeta = livingIn
+    ? [livingIn.approx_year != null ? `Living in ~${livingIn.approx_year}` : null, livingIn.age != null ? `age ~${livingIn.age}` : null].filter(Boolean)
+    : [];
 
   return (
     <div className="hook-stage">
@@ -46,19 +57,16 @@ export default function HookStage({ hookCase, typed, typingDone, run, busy, reve
         <div className={`hook-comparison ${revealed ? "revealed" : ""}`}>
           <section className="hook-guess">
             <span className="section-label">Ribot&apos;s guess</span>
-            <p className="hook-guess-meta">
-              <span className="hook-guess-unit">Living in ~{run.era.living_in.approx_year ?? "unknown"}</span>{" "}
-              <span className="hook-guess-unit">· age ~{run.era.living_in.age ?? "unknown"}</span>
-            </p>
-            <p className="hook-guess-label">{run.era.living_in.label}</p>
+            {guessMeta.length > 0 && <p className="hook-guess-meta">{guessMeta.join(" · ")}</p>}
+            {livingInLabel && <p className="hook-guess-label">{livingInLabel}</p>}
             <HighlightedWords words={herWords} translations={herWordsEn} evidence={run.era.evidence} className="hook-evidence" />
           </section>
-          {revealed && (
+          {revealed && familyWord && (
             <section className="family-reveal">
               <span>Her son said</span>
               <blockquote lang="ko"><HighlightElapsed text={familyWord} /></blockquote>
               <p className="quote-subtitle family-subtitle"><HighlightElapsed text={familyWordEn} english /></p>
-              <a href={hookCase.source_url} target="_blank" rel="noreferrer">{hookCase.source_note} ↗</a>
+              <a href={hookCase.source_url} target="_blank" rel="noreferrer">{knownText(hookCase.source_note_en) ?? knownText(hookCase.source_note) ?? "Published source"} ↗</a>
             </section>
           )}
         </div>

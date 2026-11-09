@@ -5,8 +5,7 @@ import type { Candidate, CluesResult, EraImagery, LifeProfile, ReplayRun, Reveal
 import HighlightedWords from "./HighlightedWords";
 import ProfileSummary from "./ProfileSummary";
 
-export const unknown = (value: string | number | null | undefined) => value ?? "unknown";
-const km = (value: number | null | undefined) => (value == null ? "unknown" : `${value.toFixed(1)} km`);
+const km = (value: number | null | undefined) => (value == null ? "—" : `${value.toFixed(1)} km`);
 const numberCard = (id: string) => numbersData.numbers.find((card) => card.id === id);
 const ROUTINE_NUMBER = numberCard("G14");
 const DANGER_NUMBER = numberCard("G15");
@@ -14,13 +13,16 @@ const sentenceCase = (value: string) => {
   const words = value.replaceAll("_", " ").toLowerCase();
   return words.charAt(0).toUpperCase() + words.slice(1);
 };
+const viewerText = (value: string) => value.replace(/\bunknown\b/gi, "not specified");
 
 type TextReveal = {
   revealed: boolean;
   place: string;
-  placeEn: string;
-  time: string;
+  placeEn?: string;
+  time?: string;
+  timeEn?: string;
   distanceNote?: string;
+  distanceNoteEn?: string;
   sourceUrl: string;
   sourceNote: string;
 };
@@ -39,7 +41,7 @@ function CandidateList({ candidates }: { candidates: Candidate[] }) {
               score {candidate.score.toFixed(2)}
             </abbr>
           </span>
-          {candidate.why && <small>{candidate.why}</small>}
+          {candidate.why && <small>{viewerText(candidate.why)}</small>}
         </li>
       ))}
     </ol>
@@ -66,12 +68,13 @@ type Props = {
     towerNote: string;
   } | null;
   sampleLabel: string | null;
+  nearWater: boolean;
   onThenNow: (id: string) => void;
   onReveal: () => void;
   onFindClues: () => void;
 };
 
-export default function ResultPanel({ run, reveal, profile, words, wordTranslations, showWordEvidence, possessivePronoun, busy, error, thenNow, textReveal, clues, phoneStep, sampleLabel, onThenNow, onReveal, onFindClues }: Props) {
+export default function ResultPanel({ run, reveal, profile, words, wordTranslations, showWordEvidence, possessivePronoun, busy, error, thenNow, textReveal, clues, phoneStep, sampleLabel, nearWater, onThenNow, onReveal, onFindClues }: Props) {
   const metricsRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -109,6 +112,9 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
     );
 
   const { era, plan } = run;
+  const livingInLabel = era.living_in.label?.trim();
+  const hasLivingIn = !!livingInLabel && livingInLabel.toLowerCase() !== "unknown";
+  const hasIntent = era.intent !== "unknown";
   const closest = reveal?.candidates.find((c) => c.rank === reveal.nearest_candidate_rank) ?? null;
   const hasKnownTime = era.living_in.approx_year != null || era.living_in.age != null;
   const hubHit = reveal && plan
@@ -117,6 +123,7 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
   const routineCandidates = plan?.candidates.filter((candidate) => candidate.layer === "routine") ?? [];
   const pastCandidates = plan?.candidates.filter((candidate) => candidate.layer !== "routine") ?? [];
   const hazards = plan?.hazards ?? [];
+  const firstWaterIndex = hazards.findIndex((hazard) => hazard.kind === "water");
   const nearCandidates = plan?.candidates.filter((candidate) => candidate.distance_km_from_last_seen <= 50) ?? [];
   const outsideCandidates = nearCandidates.length >= 2
     ? plan?.candidates.filter((candidate) => candidate.distance_km_from_last_seen > 50) ?? []
@@ -133,29 +140,30 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
       {sampleLabel && <p className="result-sample-note">{sampleLabel}</p>}
       {hasKnownTime && (
         <p className="result-meta">
-          {era.living_in.approx_year == null ? "Year unknown" : `~${era.living_in.approx_year}`} · age {era.living_in.age == null ? "unknown" : `~${era.living_in.age}`}
+          {[era.living_in.approx_year != null ? `~${era.living_in.approx_year}` : null, era.living_in.age != null ? `age ~${era.living_in.age}` : null].filter(Boolean).join(" · ")}
         </p>
       )}
-      <h2>Living in: {unknown(era.living_in.label)}</h2>
+      {hasLivingIn && <h2>Living in: {livingInLabel}</h2>}
       {showWordEvidence && words.length > 0 && era.evidence.length > 0 && <HighlightedWords words={words} translations={wordTranslations} evidence={era.evidence} className="result-words" />}
-      {era.evidence.length > 0 && (
+      {hasLivingIn && era.evidence.length > 0 && (
         <ul className="why-list">
           {era.evidence.map((e) => {
             const wordIndex = words.findIndex((word) => word.includes(e.quote));
+            const quoteShownAbove = showWordEvidence && wordIndex >= 0;
             return (
               <li key={e.quote}>
-                <q lang="ko">{e.quote}</q>
-                {wordIndex >= 0 && wordTranslations[wordIndex] && <span className="quote-subtitle">{wordTranslations[wordIndex]}</span>}
-                <span>{e.why}</span>
+                {!quoteShownAbove && <q lang="ko">{e.quote}</q>}
+                {!quoteShownAbove && wordIndex >= 0 && wordTranslations[wordIndex] && <span className="quote-subtitle">{wordTranslations[wordIndex]}</span>}
+                <span>{viewerText(e.why)}</span>
               </li>
             );
           })}
         </ul>
       )}
-      <section className="result-section">
+      {hasIntent && <section className="result-section">
         <span className="section-label">Intent</span>
         <strong className="intent">{sentenceCase(era.intent)}</strong>
-      </section>
+      </section>}
       {plan && phoneStep && (
         <section ref={phoneRef} className="result-section phone-call-step">
           <div className="phone-call-grid">
@@ -183,7 +191,7 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
           ) : (
             <div className="clue-results">
               <p className="clue-summary">
-                {clues.radius_km} km radius → {clues.spots.length} places matching &apos;{clues.landmarks[0]?.keyword ?? "her words"}&apos;
+                {clues.radius_km} km radius → {clues.spots.length} places matching &apos;{clues.landmarks.map((landmark) => landmark.keyword).join(" · ") || "her words"}&apos;
               </p>
               <ol className="clue-spots">
                 {clues.spots.map((spot, index) => (
@@ -192,7 +200,7 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
                     <div>
                       <b>{spot.name}</b>
                       <span>matches: {spot.keyword}</span>
-                      <span>next to: {spot.near.length ? spot.near.join(", ") : "—"}</span>
+                      {spot.near.length > 0 && <span>next to: {spot.near.join(", ")}</span>}
                     </div>
                     <strong>{km(spot.distance_km)}</strong>
                   </li>
@@ -231,7 +239,7 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
                     {DANGER_NUMBER && <a className="layer-subtitle" href={DANGER_NUMBER.source_url} target="_blank" rel="noreferrer">Deaths happen close to home, by water and in hills ↗</a>}
                     <ul className="hazard-list">
                       {hazards.map((hazard, index) => {
-                        const nearestStream = !!textReveal?.revealed && index < 2 && hazard.kind === "water";
+                        const nearestStream = nearWater && index === firstWaterIndex;
                         return (
                           <li className={nearestStream ? "nearest-stream" : ""} key={`${hazard.kind}-${hazard.name}`}>
                             <span className="hazard-icon" aria-hidden>{hazard.kind === "water" ? "💧" : "⛰️"}</span>
@@ -306,10 +314,12 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
       {textReveal?.revealed && (
         <section className="metrics text-reveal-card" ref={metricsRef}>
           <span className="section-label">Published account</span>
-          <p className="text-reveal-time" lang="ko">{textReveal.time}</p>
-          <p className="text-reveal-place" lang="ko">{textReveal.place}</p>
-          <p className="quote-subtitle">{textReveal.placeEn}</p>
-          {textReveal.distanceNote && <p className="text-reveal-distance" lang="ko">{textReveal.distanceNote}</p>}
+          {(textReveal.timeEn || textReveal.time) && <p className="text-reveal-time">{textReveal.timeEn ?? textReveal.time}</p>}
+          {textReveal.timeEn && textReveal.time && <p className="quote-subtitle" lang="ko">{textReveal.time}</p>}
+          <p className="text-reveal-place">{textReveal.placeEn ?? textReveal.place}</p>
+          {textReveal.placeEn && <p className="quote-subtitle" lang="ko">{textReveal.place}</p>}
+          {(textReveal.distanceNoteEn || textReveal.distanceNote) && <p className="text-reveal-distance">{textReveal.distanceNoteEn ?? textReveal.distanceNote}</p>}
+          {textReveal.distanceNoteEn && textReveal.distanceNote && <p className="quote-subtitle" lang="ko">{textReveal.distanceNote}</p>}
           <a href={textReveal.sourceUrl} target="_blank" rel="noreferrer">Source: {textReveal.sourceNote} ↗</a>
         </section>
       )}
