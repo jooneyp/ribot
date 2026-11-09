@@ -130,6 +130,40 @@ function JapanStat() {
   );
 }
 
+function PhoneTrackingGap() {
+  const tracked = numberById("K2e");
+  const average = numberById("K2a");
+  const adoption = numberById("K5a");
+  const police = numberById("K6");
+  const noPhone = police.label.split(", so")[0];
+
+  return (
+    <>
+      <h2 className={styles.toolQuestion}>Can&apos;t you just track the phone?</h2>
+      <div className={styles.trackingContrast}>
+        <div className={styles.trackedStat}>
+          <strong>{tracked.value}</strong>
+          <span>with a GPS tracker</span>
+        </div>
+        <span className={styles.versus}>vs</span>
+        <div className={styles.averageStat}>
+          <strong>{average.value}</strong>
+          <span>average</span>
+        </div>
+      </div>
+      <div className={styles.trackingReality}>
+        <div className={styles.adoptionStat}>
+          <strong>{adoption.value}</strong>
+          <span>{adoption.label}</span>
+        </div>
+        <p className={styles.phoneQuote}>
+          <span>{noPhone}.</span> {police.value}
+        </p>
+      </div>
+    </>
+  );
+}
+
 const slides = [
   <section className={`${styles.slide} ${styles.opening}`} key="opening">
     <p className={styles.eyebrow}>My grandmother has dementia.</p>
@@ -161,12 +195,8 @@ const slides = [
   </section>,
   <section className={styles.slide} key="tools">
     <p className={styles.eyebrow}>Today&apos;s tools find where she is now.</p>
-    <div className={styles.toolList}>
-      {["K5a", "K3a", "G11a", "G11c"].map((id) => (
-        <Stat id={id} compact key={id} />
-      ))}
-    </div>
-    <Sources ids={["K5a", "K3a", "G11a", "G11c"]} />
+    <PhoneTrackingGap />
+    <Sources ids={["K2e", "K2a", "K5a", "K6"]} />
   </section>,
   <section className={styles.slide} key="experts">
     <p className={styles.eyebrow}>The experts already know.</p>

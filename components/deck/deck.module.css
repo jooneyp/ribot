@@ -98,9 +98,22 @@
   line-height: 0.95;
 }
 
-.toolList { display: grid; gap: 2.5cqh 5%; grid-template-columns: 1fr 1fr; }
-.toolList .statCompact { border-top: 2px solid #292929; display: grid; grid-template-columns: 0.45fr 1fr; padding-top: 3%; }
-.toolList .statCompact:nth-child(2) strong { color: var(--accent); }
+.slide .toolQuestion { font-size: clamp(30px, 3.5cqw, 67px); margin-bottom: 3%; }
+.trackingContrast { align-items: end; display: grid; grid-template-columns: 1fr auto 1fr; }
+.trackedStat,
+.averageStat { display: flex; flex-direction: column; gap: clamp(12px, 1cqw, 20px); }
+.trackedStat strong,
+.averageStat strong { font-size: clamp(58px, 7.2cqw, 138px); letter-spacing: -0.015em; line-height: 0.84; }
+.trackedStat strong { color: var(--accent); }
+.trackedStat span,
+.averageStat span { color: #bdbbb5; font-size: clamp(18px, 1.45cqw, 28px); }
+.versus { align-self: center; color: #6f6d68; font-size: clamp(18px, 1.45cqw, 28px); padding: 0 1.2em; text-transform: uppercase; }
+.trackingReality { align-items: center; border-top: 2px solid #292929; display: grid; gap: 5%; grid-template-columns: 0.7fr 1.3fr; margin-top: 3.5%; padding-top: 2.5%; }
+.adoptionStat { align-items: baseline; display: grid; gap: 5%; grid-template-columns: auto 1fr; }
+.adoptionStat strong { font-size: clamp(32px, 3.5cqw, 67px); letter-spacing: -0.015em; line-height: 0.9; }
+.adoptionStat span { color: #bdbbb5; font-size: clamp(14px, 1.05cqw, 20px); line-height: 1.2; }
+.phoneQuote { font-size: clamp(17px, 1.45cqw, 28px); font-weight: 700; line-height: 1.22; margin: 0; }
+.phoneQuote span { color: #bdbbb5; font-weight: 400; }
 .japanStat { gap: clamp(8px, 0.7cqw, 14px); }
 .japanStat span { color: #bdbbb5; max-width: none; }
 .japanStat strong { color: #f5f3ed; margin-right: 0.18em; }
