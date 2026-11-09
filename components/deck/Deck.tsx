@@ -121,7 +121,7 @@ function JapanStat() {
   return (
     <div className={`${styles.statCompact} ${styles.japanStat}`}>
       <span>
-        <strong>{missing}</strong> went missing
+        <strong>{missing}</strong> went missing in Japan, {card.period}
       </span>
       <span>
         <strong>{dead}</strong> found dead
