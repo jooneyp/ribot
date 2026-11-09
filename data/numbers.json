@@ -202,29 +202,29 @@
     {
       "id": "G16",
       "value": "5.4 → 2.7 hours",
-      "label": "UK police scheme that records routines and known locations in advance (online Herbert Protocol, plus optional tags): first missing incidents after joining were found in 2.73 h vs 5.39 h before (846 people)",
-      "period": "Avon and Somerset Police data to June 2023 (published 2026)",
+      "label": "UK police scheme that records routines and known locations before anyone goes missing (online Herbert Protocol, with optional tags): first missing incidents after joining were found in 2.73 h vs 5.39 h before (846 participants; observational, p=.04)",
+      "period": "Avon and Somerset Police records to June 2023 (published 2026)",
       "source_name": "Morrissey, King, Au-Yeung, Hornberger — Innovation in Aging 10(3) igaf132 (2026)",
       "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12962802/",
       "quote": "Individuals with first missing incidents occurring after joining the scheme were found significantly faster (2.73 hours) than those with a first incident occurring before joining the scheme (5.39 hours)."
     },
     {
       "id": "G17",
-      "value": "63%",
-      "label": "of lost Alzheimer's subjects were found in a creek or drainage and/or caught in briars or bushes",
-      "period": "Virginia SAR data 1986–1992",
-      "source_name": "Koester, Lost Alzheimer's subject behavioral profile (dbs-sar.com), from Koester & Stooksbury, Wilderness and Environmental Medicine 6:34-43 (1995)",
-      "source_url": "https://www.dbs-sar.com/SAR_Research/Wandering_Characteristics.htm",
-      "quote": "Subject usually found in a creek, or drainage and/or caught in briars/bushes (63%)"
+      "value": "61%",
+      "label": "of lost Alzheimer's patients in Virginia searches were found in a creek/drainage (28%) or stuck in thick brush (33%)",
+      "period": "Virginia SAR records from 1986 (published 1995)",
+      "source_name": "Koester & Stooksbury, Wilderness and Environmental Medicine 6:34-43 (1995)",
+      "source_url": "https://www.dbs-sar.com/SAR_Research/JWM.pdf",
+      "quote": "The considerable number (28%) of DAT patients found in drainages or creeks supports the following a path of least resistance hypothesis. ... Another 33% of the patients appear to have become stuck in thick brush or briars (a feature untrained searchers often avoid). Together (61%)"
     },
     {
       "id": "G18",
       "value": "“Traveled to a previous residence”",
-      "label": "Search records: of the found-in-a-house cases, half traveled to a previous residence; the one found after a long delay was in an uninhabited former residence",
-      "period": "Virginia SAR data 1986–1992",
+      "label": "Same Virginia records: of patients found inside a house, half had traveled to a previous residence; the one uninjured patient found after a long delay was in an uninhabited former residence",
+      "period": "Virginia SAR records from 1986 (published 1995)",
       "source_name": "Koester & Stooksbury, Wilderness and Environmental Medicine 6:34-43 (1995)",
       "source_url": "https://www.dbs-sar.com/SAR_Research/JWM.pdf",
-      "quote": "In the 4 cases in which patients were in a house, 2 were hiding in their own house and 2 traveled to a previous residence."
+      "quote": "In the four cases in which patients were in a house, two were hiding in their own house and two traveled to a previous residence. ... The one uninjured DAT patient located after a considerable delay was in an uninhabited former residence."
     },
     {
       "id": "K7",
