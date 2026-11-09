@@ -225,13 +225,14 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
       )}
       {plan && (
         <>
+          {routes && routes.routes.length > 0 && (
           <section className="result-section by-now">
             <label htmlFor="elapsed-hours">
               <span>Hours since last seen <b>{elapsedHours} h</b></span>
               <input id="elapsed-hours" type="range" min="0.5" max="6" step="0.5" value={elapsedHours} onChange={(event) => onElapsedHoursChange(Number(event.target.value))} />
             </label>
             <span className="section-label">By now</span>
-            {routes ? (
+            {(
               <ul>
                 {routes.routes.map((route) => (
                   <li key={`${route.layer}-${route.to_place_id}`}>
@@ -240,8 +241,9 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
                   </li>
                 ))}
               </ul>
-            ) : <p>Calculating walking routes…</p>}
+            )}
           </section>
+          )}
           <section className="result-section check-layers">
             <span className="section-label">Check first</span>
             {visibleLayers.map((layer) => (
