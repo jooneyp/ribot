@@ -3,7 +3,7 @@
 import "leaflet/dist/leaflet.css";
 
 import L, { type LatLngBoundsExpression, type LatLngExpression, type LatLngTuple } from "leaflet";
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Circle, CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
 
 import type { EraImagery, Hazard, LatLng, MapViewProps } from "@/lib/contracts";
@@ -73,6 +73,53 @@ function FitBounds({ points, maxZoom = 13, compact = false }: { points: LatLngEx
   return null;
 }
 
+function LabelCollisionManager({ layoutKey, onChange }: { layoutKey: string; onChange: (ids: string[]) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    let frames: number[] = [];
+    let pass = 0;
+    const measure = () => {
+      const labels = [...map.getContainer().querySelectorAll<HTMLElement>(".ribot-priority-label")]
+        .map((element) => ({
+          element,
+          id: [...element.classList].find((name) => name.startsWith("ribot-label-id-"))?.slice(15) ?? "",
+          priority: Number([...element.classList].find((name) => name.startsWith("ribot-label-priority-"))?.slice(21) ?? 0),
+          order: Number([...element.classList].find((name) => name.startsWith("ribot-label-order-"))?.slice(18) ?? 0),
+          rect: element.getBoundingClientRect(),
+        }))
+        .filter((label) => label.id)
+        .toSorted((a, b) => b.priority - a.priority || a.order - b.order);
+      const kept: typeof labels = [];
+      const hidden: string[] = [];
+      for (const label of labels) {
+        const intersects = kept.some(({ rect }) =>
+          label.rect.left < rect.right && label.rect.right > rect.left
+          && label.rect.top < rect.bottom && label.rect.bottom > rect.top);
+        if (intersects) hidden.push(label.id);
+        else kept.push(label);
+      }
+      onChange(hidden);
+      if (pass < 4) {
+        pass += 1;
+        frames.push(requestAnimationFrame(() => frames.push(requestAnimationFrame(measure))));
+      }
+    };
+    const schedule = () => {
+      frames.forEach(cancelAnimationFrame);
+      pass = 0;
+      frames = [requestAnimationFrame(() => {
+        frames.push(requestAnimationFrame(measure));
+      })];
+    };
+    map.on("moveend zoomend resize", schedule);
+    return () => {
+      frames.forEach(cancelAnimationFrame);
+      map.off("moveend zoomend resize", schedule);
+    };
+  }, [layoutKey, map, onChange]);
+  return null;
+}
+
 function clueIcon(rank: number, present: boolean) {
   const size = present ? 38 : 32;
   return L.divIcon({
@@ -111,6 +158,7 @@ function RadiusCircle({ center, radiusKm, label, secondary = false }: { center: 
 const distanceLabel = (distance: number) => distance < 10 ? `${distance.toFixed(1)} km` : `${Math.round(distance)} km`;
 
 export default function MapView({ plan, profile, decade, reveal, imagery, onSelectImagery, present = false, clues }: MapViewProps) {
+  const [collisionState, setCollisionState] = useState<{ key: string; ids: Set<string> }>({ key: "", ids: new Set() });
   const profilePlaces = useMemo(() => (profile?.eras ?? []).flatMap((era, eraIndex) =>
     era.places.filter((place) => place.geo).map((place) => ({
       era, eraIndex, place, geo: place.geo!, visible: eraOverlapsDecade(era.start_year, era.end_year, decade),
@@ -120,6 +168,15 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
     if (!nearest) return candidate;
     return haversineKm(reveal.found.geo, candidate.geo) < haversineKm(reveal.found.geo, nearest.geo) ? candidate : nearest;
   }, null) : null;
+
+  const nearCandidates = useMemo(
+    () => plan?.candidates.filter((candidate) => candidate.distance_km_from_last_seen <= 50) ?? [],
+    [plan],
+  );
+  const usesNearCandidateView = nearCandidates.length >= 2;
+  const outsideCandidates = usesNearCandidateView
+    ? plan?.candidates.filter((candidate) => candidate.distance_km_from_last_seen > 50) ?? []
+    : [];
 
   const bounds = useMemo<LatLngExpression[]>(() => {
     const points: LatLngExpression[] = [];
@@ -132,12 +189,16 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
       );
     } else if (plan) {
       points.push([plan.last_seen.geo.lat, plan.last_seen.geo.lng]);
-      points.push(...plan.candidates.map((candidate) => [candidate.geo.lat, candidate.geo.lng] as LatLngTuple));
-      points.push(...plan.send_first.filter((hub) => hub.geo).map((hub) => [hub.geo!.lat, hub.geo!.lng] as LatLngTuple));
+      points.push(...(usesNearCandidateView ? nearCandidates : plan.candidates).map((candidate) => [candidate.geo.lat, candidate.geo.lng] as LatLngTuple));
+      if (!usesNearCandidateView) {
+        points.push(...plan.send_first.filter((hub) => hub.geo).map((hub) => [hub.geo!.lat, hub.geo!.lng] as LatLngTuple));
+      }
       points.push(...(plan.hazards ?? []).map((hazard) => [hazard.geo.lat, hazard.geo.lng] as LatLngTuple));
       // Candidate-less plans focus the camera on the actionable 75% search ring,
       // while plans with destinations retain the wider 95% overview.
-      const fitRadiusKm = plan.candidates.length === 0 && plan.hazard_ring_km
+      const fitRadiusKm = usesNearCandidateView && plan.hazard_ring_km
+        ? plan.hazard_ring_km
+        : plan.candidates.length === 0 && plan.hazard_ring_km
         ? plan.hazard_ring_km
         : plan.circle.radius_km;
       const latitudeRadius = fitRadiusKm / 111.32;
@@ -149,7 +210,7 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
     } else points.push(...profilePlaces.map(({ geo }) => [geo.lat, geo.lng] as LatLngTuple));
     if (!clues && reveal) points.push([reveal.found.geo.lat, reveal.found.geo.lng]);
     return points;
-  }, [clues, plan, profilePlaces, reveal]);
+  }, [clues, nearCandidates, plan, profilePlaces, reveal, usesNearCandidateView]);
 
   const topCandidate = plan?.candidates.find((candidate) => candidate.rank === 1);
   const route = plan && topCandidate ? [[plan.last_seen.geo.lat, plan.last_seen.geo.lng], [topCandidate.geo.lat, topCandidate.geo.lng]] as LatLngTuple[] : null;
@@ -160,6 +221,32 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
   const candidates = plan?.candidates ?? [];
   const hazards = plan?.hazards ?? [];
   const eras = profile?.eras ?? [];
+  const labelCandidates = [
+    ...candidates.filter((candidate) => candidate.layer === "past").toSorted((a, b) => a.rank - b.rank).slice(0, 3),
+    ...candidates.filter((candidate) => candidate.layer === "routine").toSorted((a, b) => a.rank - b.rank).slice(0, 2),
+  ];
+  const permanentCandidates = labelCandidates.reduce<typeof candidates>((selected, candidate) => {
+    // Keep the last-seen banner legible and avoid two permanent labels at effectively
+    // the same map point. The de-duplicated pins still reveal their labels on hover.
+    if (plan && haversineKm(plan.last_seen.geo, candidate.geo) < 2.5) return selected;
+    if (selected.some((other) => haversineKm(other.geo, candidate.geo) < 1)) return selected;
+    return [...selected, candidate];
+  }, []);
+  const permanentCandidateIds = new Set(permanentCandidates.map((candidate) => candidate.place_id));
+  const labelLayoutKey = JSON.stringify({
+    lastSeen: plan?.last_seen.geo,
+    candidates: permanentCandidates.map((candidate) => [candidate.rank, candidate.geo]),
+    hazards: hazards.slice(0, 3).map((hazard) => hazard.geo),
+    present,
+  });
+  const suppressedLabels = collisionState.key === labelLayoutKey ? collisionState.ids : new Set<string>();
+  const updateSuppressedLabels = useCallback((ids: string[]) => {
+    setCollisionState((current) => {
+      const next = current.key === labelLayoutKey ? new Set(current.ids) : new Set<string>();
+      ids.forEach((id) => next.add(id));
+      return { key: labelLayoutKey, ids: next };
+    });
+  }, [labelLayoutKey]);
 
   return (
     <div className={`ribot-map ${present ? "is-present" : ""}`}>
@@ -168,19 +255,27 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
         <TileLayer attribution="Esri, HERE, Garmin, &copy; OpenStreetMap contributors" url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}" maxNativeZoom={16} />
         <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}" maxNativeZoom={16} />
         <FitBounds points={bounds} maxZoom={clues ? 15 : 13} compact={!!clues} />
+        {!clues && plan && <LabelCollisionManager key={labelLayoutKey} layoutKey={labelLayoutKey} onChange={updateSuppressedLabels} />}
         {clues && <ClueRadius center={clues.center} radiusKm={clues.radius_km} />}
         {clues?.spots.map((spot, index) => <Marker key={`clue-${index}-${spot.name}`} position={[spot.geo.lat, spot.geo.lng]} icon={clueIcon(index + 1, present)} zIndexOffset={600 - index}><Tooltip permanent={index < 3} direction={index % 2 === 0 ? "right" : "left"} className="ribot-clue-label"><strong>#{index + 1} {spot.name}</strong></Tooltip></Marker>)}
         {!clues && plan && <RadiusCircle center={plan.circle.center} radiusKm={plan.circle.radius_km} label={plan.hazard_ring_km ? "95% ring" : plan.circle.label} />}
         {!clues && plan?.hazard_ring_km && <RadiusCircle center={plan.circle.center} radiusKm={plan.hazard_ring_km} label="75% ring" secondary />}
-        {!clues && route && <Polyline positions={route} pathOptions={{ color: "#f0f1eb", dashArray: "10 12", opacity: 0.9, weight: present ? 4 : 3 }}><Tooltip permanent direction="center" className="ribot-distance-label">{distanceLabel(routeDistance!)}</Tooltip></Polyline>}
+        {!clues && route && routeDistance != null && routeDistance >= 0.25 && <Polyline positions={route} pathOptions={{ color: "#f0f1eb", dashArray: "10 12", opacity: 0.9, weight: present ? 4 : 3 }}><Tooltip permanent direction="center" className="ribot-distance-label">{distanceLabel(routeDistance)}</Tooltip></Polyline>}
         {reveal && nearestCandidate && <Polyline positions={[[reveal.found.geo.lat, reveal.found.geo.lng], [nearestCandidate.geo.lat, nearestCandidate.geo.lng]]} pathOptions={{ className: "ribot-reveal-line", color: "#ff7058", weight: 2, opacity: 0.9 }}><Tooltip permanent direction="right" offset={[78, 0]} className="ribot-reveal-distance-label">{distanceLabel(nearestDistance!)}</Tooltip></Polyline>}
-        {!clues && plan && <Marker position={[plan.last_seen.geo.lat, plan.last_seen.geo.lng]} icon={pinIcon({ kind: "home", label: "", present })} zIndexOffset={500}><Tooltip permanent direction="left" className="ribot-pin-label ribot-last-seen-label"><strong>Last seen</strong> · {plan.last_seen.label}</Tooltip></Marker>}
+        {!clues && plan && <Marker position={[plan.last_seen.geo.lat, plan.last_seen.geo.lng]} icon={pinIcon({ kind: "home", label: "", present })} zIndexOffset={500}><Tooltip permanent direction="top" offset={[0, -20]} className="ribot-pin-label ribot-last-seen-label ribot-priority-label ribot-label-id-last ribot-label-priority-100 ribot-label-order-0"><strong>Last seen</strong> · {plan.last_seen.label}</Tooltip></Marker>}
         {!clues && candidates.map((candidate) => {
           const matched = imageryFor(candidate.geo, imagery);
           const color = candidate.layer === "routine" ? "#0f9f91" : candidate.layer === "past" ? "#f05239" : undefined;
-          return <Marker key={`candidate-${candidate.rank}-${candidate.place_id}`} position={[candidate.geo.lat, candidate.geo.lng]} icon={pinIcon({ kind: "candidate", label: String(candidate.rank), color, badge: !!matched, present })} eventHandlers={matched && onSelectImagery ? { click: () => onSelectImagery(matched.id) } : undefined} zIndexOffset={300 - candidate.rank}><Tooltip permanent={candidate.rank <= 3} direction="right" className={`ribot-pin-label${candidate.rank === 1 ? " ribot-rank-one-label" : ""}`}><strong>#{candidate.rank} {candidate.name}</strong><br />{distanceLabel(candidate.distance_km_from_last_seen)} from last seen</Tooltip></Marker>;
+          const labelId = `candidate-${candidate.rank}`;
+          const priority = candidate.layer === "past" ? 80 : 60;
+          const isSuppressed = suppressedLabels.has(labelId);
+          return <Marker key={`candidate-${candidate.rank}-${candidate.place_id}`} position={[candidate.geo.lat, candidate.geo.lng]} icon={pinIcon({ kind: "candidate", label: String(candidate.rank), color, badge: !!matched, present })} eventHandlers={matched && onSelectImagery ? { click: () => onSelectImagery(matched.id) } : undefined} zIndexOffset={300 - candidate.rank}><Tooltip key={`${labelId}-${isSuppressed}`} permanent={permanentCandidateIds.has(candidate.place_id) && !isSuppressed} direction={candidate.layer === "routine" ? "right" : "left"} offset={[candidate.layer === "routine" ? 10 : -10, candidate.layer === "routine" ? 12 : -12]} className={`ribot-pin-label ribot-priority-label ribot-label-id-${labelId} ribot-label-priority-${priority} ribot-label-order-${candidate.rank}${candidate.rank === 1 ? " ribot-rank-one-label" : ""}`}><strong>#{candidate.rank} {candidate.name}</strong><br />{distanceLabel(candidate.distance_km_from_last_seen)} from last seen</Tooltip></Marker>;
         })}
-        {!clues && hazards.map((hazard, index) => <Marker key={`hazard-${hazard.kind}-${hazard.name}-${index}`} position={[hazard.geo.lat, hazard.geo.lng]} icon={hazardIcon(hazard.kind, present)} zIndexOffset={350 - index}><Tooltip permanent direction={index % 2 === 0 ? "right" : "left"} offset={[0, (index - (hazards.length - 1) / 2) * 28]} className={`ribot-hazard-label ribot-hazard-label--${hazard.kind}`}><strong>{hazard.name}</strong> · {distanceLabel(hazard.distance_km)}</Tooltip></Marker>)}
+        {!clues && hazards.map((hazard, index) => {
+          const labelId = `hazard-${index}`;
+          const isSuppressed = suppressedLabels.has(labelId);
+          return <Marker key={`hazard-${hazard.kind}-${hazard.name}-${index}`} position={[hazard.geo.lat, hazard.geo.lng]} icon={hazardIcon(hazard.kind, present)} zIndexOffset={350 - index}><Tooltip key={`${labelId}-${isSuppressed}`} permanent={index < 3 && !isSuppressed} direction={index % 2 === 0 ? "right" : "left"} offset={[0, (Math.min(index, 2) - 1) * 30]} className={`ribot-hazard-label ribot-hazard-label--${hazard.kind} ribot-priority-label ribot-label-id-${labelId} ribot-label-priority-40 ribot-label-order-${index}`}><strong>{hazard.name}</strong> · {distanceLabel(hazard.distance_km)}</Tooltip></Marker>;
+        })}
         {!clues && hubs.map((hub, index) => <Marker key={`hub-${hub.name}-${index}`} position={[hub.geo!.lat, hub.geo!.lng]} icon={pinIcon({ kind: "hub", label: "", present })} zIndexOffset={400}><Tooltip direction="right" className="ribot-pin-label ribot-hub-label"><strong>Send first: {hub.name}</strong><br />{hub.line ? `${hub.line} · ` : ""}{hub.label}</Tooltip></Marker>)}
         {!plan && profilePlaces.map(({ era, eraIndex, place, geo, visible }) => {
           const matched = imageryFor(geo, imagery);
@@ -194,6 +289,9 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
           <span><strong>{era.label}</strong><br />{era.start_year ?? "unknown"}–{era.end_year ?? "unknown"}</span>
         </li>)}
       </ol>}
+      {outsideCandidates.length > 0 && <div className="ribot-outside-note">
+        {outsideCandidates.map((candidate) => <span key={candidate.place_id}>+ {candidate.name} · {Math.round(candidate.distance_km_from_last_seen)} km (outside view)</span>)}
+      </div>}
       <div className="ribot-osm-attribution">Esri, HERE, Garmin, © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors</div>
       <style jsx global>{`
         .ribot-map { position: relative; height: 100%; min-height: 360px; width: 100%; overflow: hidden; background: #171a1c; }
@@ -245,6 +343,8 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
         .ribot-era-legend li { display: flex; align-items: center; gap: 9px; transition: opacity .45s ease; }
         .ribot-era-legend li.is-muted { opacity: .35; }
         .ribot-era-dot { display: grid; place-items: center; flex: none; width: 22px; height: 22px; border-radius: 50%; color: #fff; font-weight: 800; font-size: 12px; }
+        .ribot-outside-note { position: absolute; z-index: 500; right: 12px; bottom: 18px; display: grid; gap: 3px; max-width: min(360px, 48%); padding: 7px 10px; color: #f3f2eb; background: rgba(16,18,17,.9); border: 1px solid rgba(255,255,255,.25); border-radius: 6px; box-shadow: 0 3px 14px rgba(0,0,0,.35); font-size: 14px; font-weight: 700; line-height: 1.3; }
+        .ribot-outside-note span { display: block; }
         @keyframes ribot-pin-pop { 0% { transform: translateY(-25px) scale(.35); opacity: 0; } 70% { transform: translateY(3px) scale(1.12); opacity: 1; } 100% { transform: translateY(0) scale(1); } }
         .ribot-map .ribot-reveal-line { animation: ribot-line-in .45s .42s both; }
         @keyframes ribot-line-in { from { opacity: 0; stroke-dasharray: 1 12; } to { opacity: .9; stroke-dasharray: none; } }

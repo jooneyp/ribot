@@ -64,12 +64,13 @@ type Props = {
     provenance: string;
     towerNote: string;
   } | null;
+  sampleLabel: string | null;
   onThenNow: (id: string) => void;
   onReveal: () => void;
   onFindClues: () => void;
 };
 
-export default function ResultPanel({ run, reveal, profile, words, wordTranslations, showWordEvidence, possessivePronoun, busy, error, thenNow, textReveal, clues, phoneStep, onThenNow, onReveal, onFindClues }: Props) {
+export default function ResultPanel({ run, reveal, profile, words, wordTranslations, showWordEvidence, possessivePronoun, busy, error, thenNow, textReveal, clues, phoneStep, sampleLabel, onThenNow, onReveal, onFindClues }: Props) {
   const metricsRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -113,6 +114,10 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
   const routineCandidates = plan?.candidates.filter((candidate) => candidate.layer === "routine") ?? [];
   const pastCandidates = plan?.candidates.filter((candidate) => candidate.layer !== "routine") ?? [];
   const hazards = plan?.hazards ?? [];
+  const nearCandidates = plan?.candidates.filter((candidate) => candidate.distance_km_from_last_seen <= 50) ?? [];
+  const outsideCandidates = nearCandidates.length >= 2
+    ? plan?.candidates.filter((candidate) => candidate.distance_km_from_last_seen > 50) ?? []
+    : [];
   const checkOrder = plan?.check_order ?? ["routine", "near_danger", "past"];
   const visibleLayers = checkOrder.filter((layer) =>
     layer === "routine" ? routineCandidates.length > 0
@@ -122,6 +127,7 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
   return (
     <aside className="results" aria-live="polite">
       <div className="eyebrow">Era estimate</div>
+      {sampleLabel && <p className="result-sample-note">{sampleLabel}</p>}
       {hasKnownTime && (
         <p className="result-meta">
           {era.living_in.approx_year == null ? "Year unknown" : `~${era.living_in.approx_year}`} · age {era.living_in.age == null ? "unknown" : `~${era.living_in.age}`}
@@ -193,7 +199,7 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
           )}
         </section>
       )}
-      {plan && !reveal && !textReveal?.revealed && (!phoneStep || clues) && <button className="primary reveal-button" onClick={onReveal}>Reveal</button>}
+      {plan && run.case_id !== "her-words" && !reveal && !textReveal?.revealed && (!phoneStep || clues) && <button className="primary reveal-button" onClick={onReveal}>Reveal</button>}
       {thenNow.length > 0 && (
         <section className="result-section">
           {thenNow.map((image) => (
@@ -258,6 +264,13 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
               <span>Last seen: {plan.last_seen.label} · radius search {plan.circle.radius_km} km</span>
               <span>{plan.circle.assumption}</span>
             </p>
+            {outsideCandidates.length > 0 && (
+              <p className="outside-view-note">
+                {outsideCandidates.map((candidate) => (
+                  <span key={candidate.place_id}>+ {candidate.name} · {Math.round(candidate.distance_km_from_last_seen)} km (outside view)</span>
+                ))}
+              </p>
+            )}
           </section>
           {!textReveal && (
             <section className="finder">

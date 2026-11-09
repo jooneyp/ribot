@@ -536,6 +536,7 @@ export default function Home() {
             provenance: selectedCase.phone_words_provenance ?? "",
             towerNote: selectedCase.tower_note ?? "",
           } : null}
+          sampleLabel={sampleLoaded ? sampleFamily.label_en : null}
           textReveal={isTextReveal && selectedCase ? {
             revealed: textRevealed,
             place: selectedCase.found.place,
