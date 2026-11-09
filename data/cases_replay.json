@@ -1,5 +1,5 @@
 {
-  "_rule": "Every field is verbatim or directly stated in the cited article. Unknown = null. Do NOT add facts. 'found' is hidden until the Reveal button.",
+  "_rule": "Every field is verbatim or directly stated in the cited article. Unknown = null. Do NOT add facts. 'found' is hidden until the Reveal button. Fields ending in _en are English translations of the Korean quotes, for subtitles only.",
   "cases": [
     {
       "id": "hook-1962",
@@ -19,7 +19,23 @@
         "어머니께서 62년 전에 서울에 오셨어요. 시골에서 친구분과 함께 취직하려고 와서 지금까지 계속 서울에 살고 계세요.",
         "17살 여자가 낯선 서울에 상경해 별별 일을 다 하시고 아버지와 결혼한 뒤에 자식들을 넷이나 키우셨거든요."
       ],
-      "found": {"place": "서울 한 공원 중앙광장 벤치 (구체 지명 미기재)", "how": "가게 주인 112 신고, 몇 시간째 앉아 있음", "id_on_person": "없음 (손수건, 손자 그림, 약봉지)", "report_filed_hours_before": 4}
+      "found": {
+        "place": "서울 한 공원 중앙광장 벤치 (구체 지명 미기재)",
+        "how": "가게 주인 112 신고, 몇 시간째 앉아 있음",
+        "id_on_person": "없음 (손수건, 손자 그림, 약봉지)",
+        "report_filed_hours_before": 4
+      },
+      "her_words_en": [
+        "Where is this?",
+        "I guess I got lost.",
+        "I came to Seoul with a friend yesterday. It's my first time here, so I must have gotten lost. I'm sorry.",
+        "South Jeolla, of course.",
+        "Did my friend get the job?"
+      ],
+      "family_words_en": [
+        "My mother came to Seoul 62 years ago. She came from the countryside with a friend to find work, and she has lived in Seoul ever since.",
+        "She came up to an unfamiliar Seoul at 17, did every kind of work, married my father and raised four children."
+      ]
     },
     {
       "id": "replay-srt",
@@ -32,9 +48,14 @@
       "home": "서울 (구 미기재)",
       "report_words": "치매를 앓고 있는 남편이 고향에 내려간다며 짐을 싸서 집을 나갔다",
       "profile_hometown": "익산",
-      "profile_hometown_provenance": "In the real case police learned '익산' from a short phone call with him. In the replay we treat it as a pre-registered family fact. Say this on screen.",
+      "profile_hometown_provenance": "In the real case, police learned 'Iksan' from a short phone call with him. In this replay it is treated as a fact the family registered in advance.",
       "carried_phone": true,
-      "found": {"place": "서울 수서역, 익산행 열차 객실 안", "time": "아침 7시께 승강장 포착, 출발 1분 전 열차 탑승해 출발 중단 후 발견", "how": "기지국 추적으로 수서역 특정 + 통화 중 '익산' 단서"}
+      "found": {
+        "place": "서울 수서역, 익산행 열차 객실 안",
+        "time": "아침 7시께 승강장 포착, 출발 1분 전 열차 탑승해 출발 중단 후 발견",
+        "how": "기지국 추적으로 수서역 특정 + 통화 중 '익산' 단서"
+      },
+      "report_words_en": "My husband, who has dementia, packed a bag and left home, saying he was going down to his hometown."
     },
     {
       "id": "replay-naju",
@@ -46,10 +67,20 @@
       "sex": "M",
       "home": "광주 (구체 주소 미기재)",
       "report_words": null,
-      "family_words": ["할아버지가 전부터 기억이 가물가물해지고, 집을 나서는 경우가 잦았다"],
+      "family_words": [
+        "할아버지가 전부터 기억이 가물가물해지고, 집을 나서는 경우가 잦았다"
+      ],
       "profile_hometown": "전남 나주",
       "profile_hometown_provenance": "Article: found place was his hometown village in Naju. Use city level '전남 나주' as input so the exact found spot is not leaked.",
-      "found": {"place": "전남 나주시 영산동 봉황천 인근 인도", "time": "새벽 2시", "distance_from_home_km_reported": 30, "how": "나주 U-City 통합운영센터 CCTV 관제요원 신고"}
+      "found": {
+        "place": "전남 나주시 영산동 봉황천 인근 인도",
+        "time": "새벽 2시",
+        "distance_from_home_km_reported": 30,
+        "how": "나주 U-City 통합운영센터 CCTV 관제요원 신고"
+      },
+      "family_words_en": [
+        "Grandfather's memory had been fading for a while, and he often wandered out of the house."
+      ]
     },
     {
       "id": "replay-sinchon",
@@ -60,7 +91,10 @@
       "home": "서울 은평구 불광동",
       "profile_past_residence": "젊었을 때 신촌 로터리 근처 거주",
       "profile_provenance": "Investigator learned it after finding him. Treat as hypothetical pre-registration.",
-      "found": {"place": "신촌 로터리 부근", "time": "신고 다음 날"}
+      "found": {
+        "place": "신촌 로터리 부근",
+        "time": "신고 다음 날"
+      }
     }
   ],
   "baseline_note": "25 consecutive Korean news reports of found dementia patients (2025-01~2026-11, collected 2026-11-09): only 1 reports a past-place link, 24 unknown. Do NOT compute any hit rate from news. See cases_baseline.jsonl."
