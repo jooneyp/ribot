@@ -11,6 +11,12 @@ import { haversineKm } from "@/lib/metrics";
 
 const KOREA_BOUNDS: LatLngBoundsExpression = [[33, 125], [38.6, 129.8]];
 const ERA_COLORS = ["#b45309", "#0f766e", "#4f46e5", "#be123c", "#0369a1", "#7e22ce"];
+const yearRange = (start: number | null | undefined, end: number | null | undefined) => {
+  if (start != null && end != null) return `${start}–${end}`;
+  if (start != null) return `${start}–now`;
+  if (end != null) return `until ${end}`;
+  return null;
+};
 type PinKind = "candidate" | "home" | "hub" | "place" | "found";
 
 function pinIcon({ kind, label, color, badge, muted = false, present = false }: {
@@ -382,14 +388,14 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
         {!clues && hubs.map((hub, index) => <Marker key={`hub-${hub.name}-${index}`} position={[hub.geo!.lat, hub.geo!.lng]} icon={pinIcon({ kind: "hub", label: "", present })} zIndexOffset={400}><Tooltip direction="right" className="ribot-pin-label ribot-hub-label"><strong>Send first: {hub.name}</strong><br />{hub.line ? `${hub.line} · ` : ""}{hub.label}</Tooltip></Marker>)}
         {!plan && profilePlaces.map(({ era, eraIndex, place, geo, visible }) => {
           const matched = imageryFor(geo, imagery);
-          return <Marker key={`${era.id}-${place.id}`} position={[geo.lat, geo.lng]} opacity={visible ? 1 : 0.22} icon={pinIcon({ kind: "place", label: String(eraIndex + 1), color: ERA_COLORS[eraIndex % ERA_COLORS.length], badge: !!matched, muted: !visible, present })} eventHandlers={matched && onSelectImagery ? { click: () => onSelectImagery(matched.id) } : undefined} zIndexOffset={visible ? 200 : 0}><Tooltip key={String(visible)} permanent={visible} direction="right" className="ribot-pin-label"><strong>{place.name_then}</strong><br />{era.label} · {era.start_year ?? "unknown"}–{era.end_year ?? "unknown"}</Tooltip></Marker>;
+          return <Marker key={`${era.id}-${place.id}`} position={[geo.lat, geo.lng]} opacity={visible ? 1 : 0.22} icon={pinIcon({ kind: "place", label: String(eraIndex + 1), color: ERA_COLORS[eraIndex % ERA_COLORS.length], badge: !!matched, muted: !visible, present })} eventHandlers={matched && onSelectImagery ? { click: () => onSelectImagery(matched.id) } : undefined} zIndexOffset={visible ? 200 : 0}><Tooltip key={String(visible)} permanent={visible} direction="right" className="ribot-pin-label"><strong>{place.name_then}</strong><br />{era.label}{yearRange(era.start_year, era.end_year) ? ` · ${yearRange(era.start_year, era.end_year)}` : ""}</Tooltip></Marker>;
         })}
         {reveal && <Marker key={`found-${reveal.case_id}`} position={[reveal.found.geo.lat, reveal.found.geo.lng]} icon={pinIcon({ kind: "found", label: "", present })} zIndexOffset={1000}><Tooltip permanent direction="right" offset={[10, -14]} className="ribot-found-label"><strong>Found</strong> · {reveal.found.label}</Tooltip></Marker>}
       </MapContainer>
       {!plan && eras.length > 0 && <ol className="ribot-era-legend">
         {eras.map((era, eraIndex) => <li key={era.id} className={eraOverlapsDecade(era.start_year, era.end_year, decade) ? "" : "is-muted"}>
           <span className="ribot-era-dot" style={{ background: ERA_COLORS[eraIndex % ERA_COLORS.length] }}>{eraIndex + 1}</span>
-          <span><strong>{era.label}</strong><br />{era.start_year ?? "unknown"}–{era.end_year ?? "unknown"}</span>
+          <span><strong>{era.label}</strong>{yearRange(era.start_year, era.end_year) && <><br />{yearRange(era.start_year, era.end_year)}</>}</span>
         </li>)}
       </ol>}
       {outsideCandidates.length > 0 && <div className="ribot-outside-note">
