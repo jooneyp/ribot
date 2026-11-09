@@ -137,7 +137,8 @@ async function structuredCall<T extends z.ZodType>(
     const completion = await client().chat.completions.create({
       model: textModel(),
       messages: [
-        { role: "system", content: system },
+        // The local subscription proxy ignores response_format, so the schema also travels in the prompt.
+        { role: "system", content: `${system}\n\nReturn ONLY one JSON object (no prose, no code fence) that matches this JSON Schema exactly, using these exact field names:\n${JSON.stringify(z.toJSONSchema(schema))}` },
         { role: "user", content: JSON.stringify(input) },
       ],
       response_format: zodResponseFormat(schema, schemaName),
@@ -146,7 +147,9 @@ async function structuredCall<T extends z.ZodType>(
     try {
       const content = completion.choices[0]?.message.content;
       if (!content) throw new SyntaxError("The model returned no structured output");
-      return schema.parse(JSON.parse(content));
+      const parsed: unknown = JSON.parse(content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, ""));
+      // The subscription proxy does not always enforce a top-level object; hub lists sometimes come back bare.
+      return schema.parse(Array.isArray(parsed) && schemaName === "hub_proposals" ? { hubs: parsed } : parsed);
     } catch (error) {
       const parseFailure = error instanceof SyntaxError || error instanceof z.ZodError;
       if (!parseFailure || attempt === 1) throw error;

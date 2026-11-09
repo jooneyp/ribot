@@ -124,7 +124,7 @@ export async function buildPlan(input: PlanInput, assumption = "assumed 3 km/h w
   if (candidates[0] && candidates[0].distance_km_from_last_seen > 15) {
     const proposals = await proposeHubs({ from_label: input.last_seen.label, to_label: candidates[0].name });
     sendFirst = await Promise.all(proposals.map(async (proposal) => {
-      const geo = await geocode(proposal.query);
+      const geo = (await geocode(proposal.name)) ?? (await geocode(proposal.query));
       return {
         name: proposal.name,
         kind: proposal.kind,

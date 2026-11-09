@@ -71,7 +71,8 @@ function profileFor(entry: ReplayCase): LifeProfile | null {
 
 export async function runReplay(caseId: string): Promise<ReplayRun> {
   const entry = replayCase(caseId);
-  const nowYear = entry.date ? new Date(`${entry.date}T00:00:00Z`).getUTCFullYear() : 2026;
+  const dated = entry.date ?? (typeof entry.article_date === "string" ? entry.article_date : null);
+  const nowYear = dated ? new Date(`${dated}T00:00:00Z`).getUTCFullYear() : 2026;
   const words = entry.her_words ?? [];
   const era = words.length === 0 && !entry.report_words
     ? unknownEra
