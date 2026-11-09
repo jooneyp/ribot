@@ -97,6 +97,28 @@
         "place": "신촌 로터리 부근",
         "time": "신고 다음 날"
       }
+    },
+    {
+      "id": "replay-uijeongbu",
+      "role": "near-home replay (routine + danger layers)",
+      "source_url": "https://www.yna.co.kr/view/AKR20250716136200060",
+      "source_note": "연합뉴스 2025-07-16",
+      "date": "2025-07-13",
+      "age_band": "70s",
+      "sex": "F",
+      "home": "의정부시 용현동",
+      "home_level": "dong",
+      "report_words": "분리수거하러 잠깐 다녀온 사이 아내가 사라졌고 귀가하지 않는다",
+      "report_words_en": "While I stepped out to take out the recycling, my wife disappeared and hasn't come home.",
+      "search_note": "당국은 A씨가 집 근처 야산에 있을 것으로 보고 수색을 이어갔지만, 실종 3일째까지 행방을 찾지 못했다.",
+      "search_note_en": "Searchers assumed she was in the hills near home; by day 3 they had not found her.",
+      "reveal_mode": "text",
+      "found": {
+        "place": "개나리가 무성한 하천변 인근 풀숲 (하천명 미기재)",
+        "place_en": "In thick forsythia brush by a stream (the article does not name the stream)",
+        "time": "실종 나흘째(16일) 오전 9시 50분께",
+        "how": "경찰 체취증거견"
+      }
     }
   ],
   "baseline_note": "25 consecutive Korean news reports of found dementia patients (2025-01~2026-11, collected 2026-11-09): only 1 reports a past-place link, 24 unknown. Do NOT compute any hit rate from news. See cases_baseline.jsonl."

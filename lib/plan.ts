@@ -1,4 +1,5 @@
-import type { Candidate, Era, FinderCard, GeoResult, Hub, Place, Plan, PlanInput } from "./contracts";
+import type { Candidate, Era, FinderCard, GeoResult, Hub, Layer, Place, Plan, PlanInput } from "./contracts";
+import { HAZARD_RING_KM, nearbyHazards } from "./hazards";
 import { geocode } from "./geo";
 import { proposeHubs } from "./llm";
 import { haversineKm, round1 } from "./metrics";
@@ -8,7 +9,14 @@ function overlaps(era: Era, range: [number, number] | null): boolean {
   return era.start_year <= range[1] && era.end_year >= range[0];
 }
 
-type SelectedPlace = { place: Place; era: Era | null; eraMatch: number; isHometown: boolean };
+type SelectedPlace = { place: Place; era: Era | null; eraMatch: number; isHometown: boolean; layer: "routine" | "past" };
+
+// The present-day era (where she goes alone these days) is always searched: most incidents start on a usual errand
+// ("58% were engaged in an appropriate and permitted unsupervised activity", Rowe et al. 2011).
+const NOW_LABEL = /\b(now|present|current|these days|today)\b|요즘|현재|최근/i;
+function routineEra(eras: Era[]): Era | null {
+  return eras.find((e) => NOW_LABEL.test(e.label)) ?? null;
+}
 
 const round2 = (x: number) => Math.round(x * 100) / 100;
 // A proposed departure hub geocoded farther than this from last seen is a wrong-city hit: keep the name, drop the pin.
@@ -50,9 +58,14 @@ function whyText(selected: SelectedPlace, range: [number, number] | null, km: nu
 function selectPlaces(input: PlanInput): SelectedPlace[] {
   const range = input.era.living_in.year_range;
   const selected = new Map<string, SelectedPlace>();
+  const now = routineEra(input.profile.eras);
   for (const era of input.profile.eras) {
+    if (era === now) {
+      for (const place of era.places) selected.set(place.id, { place, era, eraMatch: 1, isHometown: false, layer: "routine" });
+      continue;
+    }
     if (!overlaps(era, range)) continue;
-    for (const place of era.places) selected.set(place.id, { place, era, eraMatch: 1, isHometown: false });
+    for (const place of era.places) selected.set(place.id, { place, era, eraMatch: 1, isHometown: false, layer: "past" });
   }
 
   const hometown = input.profile.person.hometown?.trim();
@@ -63,7 +76,7 @@ function selectPlaces(input: PlanInput): SelectedPlace[] {
     );
     if (home) {
       const eraMatch = overlaps(home.era, range) ? 1 : 0.3;
-      selected.set(home.place.id, { place: home.place, era: home.era, eraMatch, isHometown: true });
+      selected.set(home.place.id, { place: home.place, era: home.era, eraMatch, isHometown: true, layer: "past" });
     } else {
       selected.set("person-hometown", {
         place: {
@@ -78,6 +91,7 @@ function selectPlaces(input: PlanInput): SelectedPlace[] {
         era: null,
         eraMatch: 0.3,
         isHometown: true,
+        layer: "past",
       });
     }
   }
@@ -97,7 +111,7 @@ export async function buildPlan(input: PlanInput, assumption = MANUAL_RING): Pro
   if (!lastSeenGeo) throw new Error(`Could not geocode last seen place: ${input.last_seen.query}`);
 
   const range = input.era.living_in.year_range;
-  const candidates = (await Promise.all(selectPlaces(input).map(async (selected) => {
+  const candidates = (await Promise.all(selectPlaces(input).map(async (selected): Promise<Candidate | null> => {
     const { place, era, eraMatch } = selected;
     const geo = await placeGeo(place);
     if (!geo) return null;
@@ -110,6 +124,7 @@ export async function buildPlan(input: PlanInput, assumption = MANUAL_RING): Pro
     const score = round2(eraMatch * reachability * place.confidence);
     return {
       rank: 1,
+      layer: selected.layer,
       place_id: place.id,
       name: place.name_then,
       era_id: era?.id ?? null,
@@ -118,7 +133,7 @@ export async function buildPlan(input: PlanInput, assumption = MANUAL_RING): Pro
       score,
       score_parts: { era_match: eraMatch, reachability, confidence: place.confidence },
       why: whyText(selected, range, distance),
-    } satisfies Candidate;
+    };
   }))).filter((candidate): candidate is Candidate => candidate !== null);
 
   candidates.sort((a, b) => b.score - a.score || a.distance_km_from_last_seen - b.distance_km_from_last_seen);
@@ -139,6 +154,10 @@ export async function buildPlan(input: PlanInput, assumption = MANUAL_RING): Pro
     }));
   }
 
+  const hazards = await nearbyHazards(lastSeenGeo);
+  const headingSomewhere = ["going_home", "going_to_work", "looking_for_someone"].includes(input.era.intent);
+  const checkOrder: Layer[] = headingSomewhere ? ["past", "routine", "near_danger"] : ["routine", "near_danger", "past"];
+
   return {
     last_seen: { label: input.last_seen.label, geo: lastSeenGeo },
     elapsed_hours: input.elapsed_hours,
@@ -151,5 +170,8 @@ export async function buildPlan(input: PlanInput, assumption = MANUAL_RING): Pro
     candidates,
     send_first: sendFirst,
     finder_card: FINDER_CARDS[input.era.intent],
+    hazards,
+    hazard_ring_km: HAZARD_RING_KM,
+    check_order: checkOrder,
   };
 }

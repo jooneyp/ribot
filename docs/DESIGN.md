@@ -48,3 +48,11 @@ Deliverable = a 90-second screen-recorded video + this repo. Every screen in the
 
 ## Out of scope
 Auth, database, accounts, multi-user, i18n framework, phone calls, notifications, analytics, real-time tracking, any admin screen.
+
+
+## Three search layers (design change 11:20, Joon: cover more than "living in the past")
+Ribot builds one search plan from her life, in three layers. Her words' intent sets which layer is checked first (`plan.check_order`): heading somewhere (going_home / going_to_work / looking_for_someone) → past first; otherwise routine → near danger → past. Skip empty layers in the UI.
+1. **Routine — where she goes alone these days.** Places in the profile era labelled "Now" (`candidate.layer = "routine"`). Why: "58% were engaged in an appropriate and permitted unsupervised activity just prior to the missing incident" (Rowe et al. 2011, data/numbers.json G14).
+2. **Near danger — water and hills close to home.** `plan.hazards` (Kakao places in categories 하천/저수지/산 within `plan.hazard_ring_km` = 3.2 km, the manual's urban 75% distance), nearest first. Why: deaths "most commonly occurred in unpopulated areas due to exposure and drowning" and were found "closer to the place last seen" (Rowe 2011, G15).
+3. **Past — where she would go back to.** Era places + hometown + departure hubs (`candidate.layer = "past"`). The original Ribot idea.
+New replay `replay-uijeongbu` (Yonhap 2025-07-16): searchers assumed the hills near home for three days; she was found on day 4 in brush by a stream. `reveal_mode: "text"` → reveal shows `found.place` / `found.place_en` and `search_note_en` as text (no geocoded reveal). Not an accuracy claim.

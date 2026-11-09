@@ -77,15 +77,22 @@ export async function runReplay(caseId: string): Promise<ReplayRun> {
   const era = words.length === 0 && !entry.report_words
     ? unknownEra
     : await estimateEra({ words, report_words: entry.report_words ?? null, age_band: entry.age_band ?? null, now_year: nowYear });
-  const profile = profileFor(entry);
-  if (!profile || !entry.home) return { case_id: entry.id, era, profile: null, plan: null };
+  if (!entry.home) return { case_id: entry.id, era, profile: null, plan: null };
+  // No family profile in the article: still plan the near-home layers (routine is empty, danger is not).
+  const profile = profileFor(entry) ?? {
+    person: { display_name: `Case ${entry.id}`, birth_year: null, hometown: null },
+    eras: [],
+    habits: [],
+    source_text: "",
+  };
 
   const city = stripParenthetical(entry.home);
   const lastSeenQuery = entry.id === "replay-naju" ? "광주광역시" : city;
+  const level = typeof entry.home_level === "string" ? entry.home_level : "city";
   const plan = await buildPlan({
     profile,
     era,
-    last_seen: { label: `${city} (city-level)`, query: lastSeenQuery },
+    last_seen: { label: `${city} (${level}-level)`, query: lastSeenQuery },
     elapsed_hours: 1,
   });
   return { case_id: entry.id, era, profile, plan };

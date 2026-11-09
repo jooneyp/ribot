@@ -81,8 +81,21 @@ export const Hub = z.object({
 });
 export type Hub = z.infer<typeof Hub>;
 
+// Three search layers (design change 11:20): where she goes now, what is dangerous near home, where she'd go back to.
+export const Layer = z.enum(["routine", "near_danger", "past"]);
+export type Layer = z.infer<typeof Layer>;
+
+export const Hazard = z.object({
+  name: z.string(),
+  kind: z.enum(["water", "hill"]),
+  geo: GeoResult,
+  distance_km: z.number(),
+});
+export type Hazard = z.infer<typeof Hazard>;
+
 export const Candidate = z.object({
   rank: z.number().int().min(1),
+  layer: z.enum(["routine", "past"]).optional(),
   place_id: z.string(),
   name: z.string(),
   era_id: z.string().nullable(),
@@ -117,6 +130,9 @@ export const Plan = z.object({
   candidates: z.array(Candidate),
   send_first: z.array(Hub), // empty unless top candidate > 15 km away
   finder_card: FinderCard,
+  hazards: z.array(Hazard).optional(), // water and hills within hazard_ring_km of last seen, nearest first
+  hazard_ring_km: z.number().optional(), // 3.2 km = manual's urban 75% distance
+  check_order: z.array(Layer).optional(), // which layer to check first, from her words' intent
 });
 export type Plan = z.infer<typeof Plan>;
 

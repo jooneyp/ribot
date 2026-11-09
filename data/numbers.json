@@ -180,6 +180,24 @@
       "source_name": "Rowe et al., BMC Geriatrics 11:28 (2011)",
       "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3141319/",
       "quote": "A small percentage of individuals (8%) indicated they were trying to get to a former residence or work location or a relative's home."
+    },
+    {
+      "id": "G14",
+      "value": "58%",
+      "label": "were on a usual, permitted errand alone just before going missing (325 US cases)",
+      "period": "2003–2008 (published 2011)",
+      "source_name": "Rowe et al., BMC Geriatrics 11:28 (2011)",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3141319/",
+      "quote": "The majority of individuals (58%) were engaged in an appropriate and permitted unsupervised activity just prior to the missing incident."
+    },
+    {
+      "id": "G15",
+      "value": "Close, and in nature",
+      "label": "Deaths happened mostly in unpopulated areas (exposure, drowning), closer to where they were last seen",
+      "period": "2003–2008 (published 2011)",
+      "source_name": "Rowe et al., BMC Geriatrics 11:28 (2011)",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3141319/",
+      "quote": "Deaths most commonly occurred in unpopulated areas due to exposure and drowning. Those who died were found closer to the place last seen and took longer to find"
     }
   ]
 }
