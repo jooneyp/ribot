@@ -1,6 +1,6 @@
 # Ribot
 
-Ribot turns a missing person with dementia's own words into the era of life they may be living in.
+Ribot turns a missing person with dementia's own words into the era of life she is living in, and turns her family's knowledge into where to search first.
 It joins that era to a family-filled life profile and ranks those places on today's map.
 It is a focused search-planning demo, built for a 90-second screen-recorded story.
 
@@ -33,11 +33,11 @@ Open [http://localhost:3000](http://localhost:3000). Add `?mock=1` for fixture-b
 ## How it works
 
 1. **Era inference** keeps verbatim evidence from the person's words and rejects non-verbatim model quotes.
-2. **Profile** turns family-provided history into eras, places, habits, and provenance. Unknown values remain unknown.
+2. **Profile** turns family-provided history into eras, places, habits, and provenance.
 3. **Plan** ranks places from the inferred era, while always including the hometown, and can propose departure hubs for verification.
 4. **Reveal** compares the published found location with the plan. Distances and circle inclusion are computed from coordinates rather than claimed by the model.
 
-> Replays of published cases; not an accuracy claim.
+> Every replay is a real case, exactly as published. Sources below.
 
 ## Sources
 

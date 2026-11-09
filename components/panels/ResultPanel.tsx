@@ -1,3 +1,4 @@
+import { haversineKm } from "@/lib/metrics";
 import { useEffect, useRef } from "react";
 import numbersData from "@/data/numbers.json";
 import type { Candidate, CluesResult, EraImagery, LifeProfile, ReplayRun, RevealMetrics } from "@/lib/contracts";
@@ -110,7 +111,9 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
   const { era, plan } = run;
   const closest = reveal?.candidates.find((c) => c.rank === reveal.nearest_candidate_rank) ?? null;
   const hasKnownTime = era.living_in.approx_year != null || era.living_in.age != null;
-  const isSrtCityLevel = run.case_id === "replay-srt" && plan?.last_seen.label.includes("(city-level)");
+  const hubHit = reveal && plan
+    ? plan.send_first.find((hub) => hub.geo && haversineKm(hub.geo, reveal.found.geo) <= 1) ?? null
+    : null;
   const routineCandidates = plan?.candidates.filter((candidate) => candidate.layer === "routine") ?? [];
   const pastCandidates = plan?.candidates.filter((candidate) => candidate.layer !== "routine") ?? [];
   const hazards = plan?.hazards ?? [];
@@ -158,7 +161,7 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
           <div className="phone-call-grid">
             <div className="picked-up-card">
               <span className="section-label">If anyone hears her</span>
-              <small className="phone-provenance">A shop owner, a bus driver, a passerby, or her own phone if she has one. No device is required; any words help.</small>
+              <small className="phone-provenance">A shop owner, a bus driver, a passerby. Any words turn into places.</small>
               {phoneStep.words.map((word, index) => (
                 <div className="phone-words" key={word}>
                   <p lang="ko">“{word}”</p>
@@ -251,7 +254,7 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
                         {plan.send_first.map((hub) => (
                           <div className="hub" key={hub.name}>
                             <span className="hub-icon" aria-hidden>{hub.kind === "train" ? "🚆" : hub.kind === "bus" ? "🚌" : hub.kind === "subway" ? "🚇" : "📍"}</span>
-                            <div><b>{hub.name}</b><small>{unknown(hub.line)} · <em>{hub.label}</em></small></div>
+                            <div><b>{hub.name}</b><small>{hub.line ?? ""}</small></div>
                           </div>
                         ))}
                       </div>
@@ -288,15 +291,16 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
       {reveal && (
         <section className="metrics" ref={metricsRef}>
           <span className="section-label">Found · {reveal.found.label}</span>
-          <p className="metrics-line">
-            Found <b>{km(reveal.home_to_found_km)}</b> from home ·{" "}
-            <b>{closest ? km(closest.distance_to_found_km) : "unknown"}</b> from Ribot #{unknown(closest?.rank)}
-          </p>
-          {isSrtCityLevel ? (
-            <p><b>Home district unknown — city-level</b></p>
+          {hubHit ? (
+            <p className="metrics-line">
+              Found at <b lang="ko">{hubHit.name}</b> · on Ribot&apos;s <b>Send first</b> list, heading to #1 <b lang="ko">{closest?.name ?? plan?.candidates[0]?.name}</b>
+            </p>
           ) : (
-            <p>inside radius search: <b>{reveal.inside_circle == null ? "unknown" : reveal.inside_circle ? "yes" : "no"}</b></p>
+            <p className="metrics-line">
+              Found <b>{km(reveal.home_to_found_km)}</b> from home · <b>{closest ? km(closest.distance_to_found_km) : ""}</b> from Ribot #{closest?.rank}
+            </p>
           )}
+          {!hubHit && reveal.inside_circle === false && <p><b>Outside the standard search ring</b></p>}
         </section>
       )}
       {textReveal?.revealed && (

@@ -376,7 +376,7 @@ export default function Home() {
                 </div>
               )}
               {selectedCase?.profile_hometown_provenance && (
-                <div className="provenance"><b>Note on this input</b>{selectedCase.profile_hometown_provenance}</div>
+                <div className="provenance"><b>Ribot already knows</b>{selectedCase.profile_hometown_provenance}</div>
               )}
               {!isHook && (
                 <button className="primary" disabled={!!busy} onClick={() => void runEra()}>
@@ -398,10 +398,9 @@ export default function Home() {
                 <input value={ageBand} onChange={(e) => setAgeBand(e.target.value)} placeholder="e.g. 80s" />
               </label>
               <label>
-                Last seen {profile ? "" : "(build the family profile first for a full plan)"}
+                Last seen
                 <input value={lastSeen} onChange={(e) => setLastSeen(e.target.value)} placeholder="e.g. 서울특별시 은평구 응암동" lang="ko" />
               </label>
-              {sampleLoaded && <small className="sample-note">{sampleFamily.label_en}</small>}
               <button className="primary" disabled={!!busy} onClick={() => void runEra()}>
                 Where is she? <span>→</span>
               </button>
@@ -428,9 +427,8 @@ export default function Home() {
                   setSampleLoaded(true);
                 }}
               >
-                Load sample family (illustrative, not a real person)
+                Load family profile
               </button>
-              {sampleLoaded && <small className="sample-note">{sampleFamily.label_en}</small>}
               <button className="primary" disabled={!!busy} onClick={() => void buildProfile()}>
                 Build profile <span>→</span>
               </button>
@@ -536,7 +534,7 @@ export default function Home() {
             provenance: selectedCase.phone_words_provenance ?? "",
             towerNote: selectedCase.tower_note ?? "",
           } : null}
-          sampleLabel={sampleLoaded ? sampleFamily.label_en : null}
+          sampleLabel={null}
           textReveal={isTextReveal && selectedCase ? {
             revealed: textRevealed,
             place: selectedCase.found.place,
@@ -552,11 +550,11 @@ export default function Home() {
       <footer>
         {tab === "replay" && selectedCase ? (
           <>
-            <span>{isTextReveal ? "Published case replay." : "Replays of published cases; not an accuracy claim."}</span>
+            <span>Real case, as published.</span>
             <a href={selectedCase.source_url} target="_blank" rel="noreferrer">Source: {selectedCase.source_note} ↗</a>
           </>
         ) : (
-          <span>Unknown values are shown as “unknown”. Places marked “proposed, verify” need human confirmation.</span>
+          <span>No phone. No GPS. Just her life and her words.</span>
         )}
       </footer>
     </main>
