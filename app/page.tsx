@@ -35,11 +35,11 @@ type CaseWithSubtitles = ReplayCase & {
 const HOOK_ID = "hook-1962";
 const SEARCH_MANUAL_RADIUS_KM = 12.6;
 const SEARCH_MANUAL_ASSUMPTION = "95% of urban dementia searches end within 12.6 km (Koester, Lost Person Behavior, n=336)";
-const CASE_ORDER = ["hook-1962", "replay-srt", "replay-bulgwang", "replay-uijeongbu", "replay-naju"];
+const CASE_ORDER = ["hook-1962", "replay-srt", "replay-uijeongbu", "replay-bulgwang", "replay-naju"];
 const CASE_TITLES: Record<string, string> = {
   "hook-1962": "The question",
   "replay-srt": "The station",
-  "replay-bulgwang": "She picked up",
+  "replay-bulgwang": "The rice paddy",
   "replay-naju": "The hometown",
   "replay-uijeongbu": "Near home",
 };

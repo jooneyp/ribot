@@ -151,7 +151,8 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
         <section ref={phoneRef} className="result-section phone-call-step">
           <div className="phone-call-grid">
             <div className="picked-up-card">
-              <span className="section-label">She picked up</span>
+              <span className="section-label">If anyone hears her</span>
+              <small className="phone-provenance">A shop owner, a bus driver, a passerby, or her own phone if she has one. No device is required; any words help.</small>
               {phoneStep.words.map((word, index) => (
                 <div className="phone-words" key={word}>
                   <p lang="ko">“{word}”</p>
@@ -162,7 +163,7 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
               {phoneStep.towerNote && <p className="tower-note">{phoneStep.towerNote}</p>}
             </div>
             <div className="ask-her-card">
-              <span className="section-label">Ask her (don&apos;t argue)</span>
+              <span className="section-label">Whoever reaches her: ask, don&apos;t argue</span>
               <p><span lang="ko">지금 뭐가 보이세요?</span><small>What can you see?</small></p>
               <p><span lang="ko">건너편에 뭐가 있어요?</span><small>What is across the street?</small></p>
               <p><span lang="ko">어디 가시는 길이세요?</span><small>Where are you heading?</small></p>
