@@ -37,9 +37,15 @@ Open [http://localhost:3000](http://localhost:3000). Add `?mock=1` for fixture-b
 3. **Plan** ranks places from the inferred era, while always including the hometown, and can propose departure hubs for verification.
 4. **Reveal** compares the published found location with the plan. Distances and circle inclusion are computed from coordinates rather than claimed by the model.
 
-> Every replay is a real case, exactly as published. Sources below.
+> Every replay starts from a real, published case; the found location stays hidden until Ribot's plan is set. Sources below.
 
 ## Sources
+
+- G8e — Koester, Lost Person Behavior (urban 75% / 95% distances): https://www.dbs-sar.com/LPB/Dementia.pdf
+- G14, G15 — Rowe et al., BMC Geriatrics 11:28 (2011): https://pmc.ncbi.nlm.nih.gov/articles/PMC3141319/
+- G16 — Morrissey et al., Innovation in Aging (2026), Avon & Somerset Police Dementia Safeguarding Scheme: https://pmc.ncbi.nlm.nih.gov/articles/PMC12962802/
+- G17, G18 — Koester & Stooksbury, Wilderness and Environmental Medicine 6:34-43 (1995): https://www.dbs-sar.com/SAR_Research/JWM.pdf
+- K7 — Hankyoreh, Eunpyeong Police missing-persons team (2019-05-29): https://www.hani.co.kr/arti/society/society_general/895733.html
 
 - Public CCTV locations: 전국CCTV표준데이터 (data.go.kr 15013094), Seoul rows, downloaded 2026-11-09 — https://www.data.go.kr/data/15013094/standard.do
 - Walking routes: OSRM foot profile (routing.openstreetmap.de), OpenStreetMap contributors
