@@ -109,6 +109,24 @@ export async function finderCard(input: { era: EraEstimate; profile: LifeProfile
   };
 }
 
+const LandmarkOutput = z.object({
+  landmarks: z.array(z.object({ keyword: z.string(), quote: z.string() })).max(5),
+});
+
+/** Her phone fragments → short Korean map-search nouns (놀이터, 학교, 공원, 교회, 시장, 역, 다리, 하천 …). Quotes are guarded. */
+export async function extractLandmarks(words: string[]): Promise<{ keyword: string; quote: string }[]> {
+  const source = words.join("\n");
+  return cached("landmarks", words, async () => {
+    const out = await structuredCall(
+      "A person with dementia is on the phone and does not know where she is. From her exact words, list the physical places or things she says she can see or is near, as short Korean nouns that work as a map search keyword (for example 놀이터, 학교, 공원, 교회, 시장, 역, 다리, 하천, 아파트, 버스정류장). Use only things she actually mentions; each item cites the exact verbatim quote. Do not include places she wants to go to or remembers from the past. If none, return an empty list.",
+      { words },
+      LandmarkOutput,
+      "landmarks",
+    );
+    return keepGrounded(out.landmarks, source);
+  });
+}
+
 /** Audio → text (Korean), using only the local Whisper-compatible server. */
 export async function transcribe(audio: Blob, filename: string): Promise<string> {
   const base = process.env.RIBOT_STT_BASE_URL || "http://127.0.0.1:8200/v1";

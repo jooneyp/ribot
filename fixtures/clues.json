@@ -1,0 +1,134 @@
+{
+  "center": {
+    "lat": 37.6039416314408,
+    "lng": 126.928541283534,
+    "display_name": "녹번서근린공원",
+    "source": "kakao"
+  },
+  "radius_km": 1,
+  "landmarks": [
+    {
+      "keyword": "공원",
+      "quote": "공원 같다."
+    },
+    {
+      "keyword": "놀이터",
+      "quote": "놀이터"
+    },
+    {
+      "keyword": "학교",
+      "quote": "학교 근처"
+    }
+  ],
+  "spots": [
+    {
+      "name": "하랑어린이공원",
+      "keyword": "놀이터",
+      "geo": {
+        "lat": 37.5999930521159,
+        "lng": 126.93082799428,
+        "display_name": "하랑어린이공원",
+        "source": "kakao"
+      },
+      "distance_km": 0.5,
+      "near": [
+        "공원",
+        "학교"
+      ]
+    },
+    {
+      "name": "은평평화공원 물놀이터",
+      "keyword": "놀이터",
+      "geo": {
+        "lat": 37.6052989208782,
+        "lng": 126.923430198494,
+        "display_name": "은평평화공원 물놀이터",
+        "source": "kakao"
+      },
+      "distance_km": 0.5,
+      "near": [
+        "공원",
+        "학교"
+      ]
+    },
+    {
+      "name": "호연어린이공원",
+      "keyword": "공원·놀이터",
+      "geo": {
+        "lat": 37.6055036406127,
+        "lng": 126.931053920033,
+        "display_name": "호연어린이공원",
+        "source": "kakao"
+      },
+      "distance_km": 0.3,
+      "near": []
+    },
+    {
+      "name": "응암어린이공원",
+      "keyword": "놀이터",
+      "geo": {
+        "lat": 37.6016464093045,
+        "lng": 126.923587952928,
+        "display_name": "응암어린이공원",
+        "source": "kakao"
+      },
+      "distance_km": 0.5,
+      "near": [
+        "공원"
+      ]
+    },
+    {
+      "name": "양천리누리터 어린이공원",
+      "keyword": "놀이터",
+      "geo": {
+        "lat": 37.6062984471175,
+        "lng": 126.934450696564,
+        "display_name": "양천리누리터 어린이공원",
+        "source": "kakao"
+      },
+      "distance_km": 0.6,
+      "near": [
+        "학교"
+      ]
+    },
+    {
+      "name": "신록어린이공원",
+      "keyword": "놀이터",
+      "geo": {
+        "lat": 37.6051472114568,
+        "lng": 126.938216090056,
+        "display_name": "신록어린이공원",
+        "source": "kakao"
+      },
+      "distance_km": 0.9,
+      "near": []
+    },
+    {
+      "name": "역마을어린이공원",
+      "keyword": "놀이터",
+      "geo": {
+        "lat": 37.6010915974225,
+        "lng": 126.918497140405,
+        "display_name": "역마을어린이공원",
+        "source": "kakao"
+      },
+      "distance_km": 0.9,
+      "near": []
+    },
+    {
+      "name": "녹번서근린공원",
+      "keyword": "공원",
+      "geo": {
+        "lat": 37.6039416314408,
+        "lng": 126.928541283534,
+        "display_name": "녹번서근린공원",
+        "source": "kakao"
+      },
+      "distance_km": 0,
+      "near": [
+        "놀이터",
+        "학교"
+      ]
+    }
+  ]
+}

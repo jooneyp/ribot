@@ -73,7 +73,7 @@ export async function runReplay(caseId: string): Promise<ReplayRun> {
   const entry = replayCase(caseId);
   const dated = entry.date ?? (typeof entry.article_date === "string" ? entry.article_date : null);
   const nowYear = dated ? new Date(`${dated}T00:00:00Z`).getUTCFullYear() : 2026;
-  const words = entry.her_words ?? [];
+  const words = entry.her_words ?? (Array.isArray(entry.before_leaving_words) ? (entry.before_leaving_words as string[]) : []);
   const era = words.length === 0 && !entry.report_words
     ? unknownEra
     : await estimateEra({ words, report_words: entry.report_words ?? null, age_band: entry.age_band ?? null, now_year: nowYear });

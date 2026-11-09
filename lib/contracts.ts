@@ -202,6 +202,32 @@ export const NumberCard = z.object({
 });
 export type NumberCard = z.infer<typeof NumberCard>;
 
+// Phone-call clues (design change 11:35): when she picks up, her fragments ("공원 같다. 놀이터, 학교 근처")
+// become map spots inside the cell-tower radius.
+export const CluesInput = z.object({
+  words: z.array(z.string()).min(1),
+  center_query: z.string(), // cell tower / last known area, geocodable
+  radius_km: z.number().positive().max(5),
+});
+export type CluesInput = z.infer<typeof CluesInput>;
+
+export const ClueSpot = z.object({
+  name: z.string(),
+  keyword: z.string(), // which of her landmark words this place matches
+  geo: GeoResult,
+  distance_km: z.number(),
+  near: z.array(z.string()), // her other landmark words with a matching place within 300 m
+});
+export type ClueSpot = z.infer<typeof ClueSpot>;
+
+export const CluesResult = z.object({
+  center: GeoResult,
+  radius_km: z.number(),
+  landmarks: z.array(z.object({ keyword: z.string(), quote: z.string() })), // quote is verbatim from her words
+  spots: z.array(ClueSpot), // best co-located first
+});
+export type CluesResult = z.infer<typeof CluesResult>;
+
 // Map component props (lane C implements, lane D consumes)
 export type MapViewProps = {
   plan?: Plan | null;
@@ -211,4 +237,5 @@ export type MapViewProps = {
   imagery?: EraImagery[];
   onSelectImagery?: (id: string) => void;
   present?: boolean;
+  clues?: CluesResult | null; // draw the tower radius + numbered clue spots
 };
