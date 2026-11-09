@@ -162,6 +162,24 @@
       "source_name": "Financial News (police official), 2021-11-15",
       "source_url": "https://www.fnnews.com/news/202111151705127679",
       "quote": "치매노인 실종 수색·수사 시 실종자가 휴대전화를 소지하지 않아 위치추적에 어려움을 겪는 사례가 많다 ... 이 경우 폐쇄회로(CC)TV에 의존해야 하는데 지역이 특정되지 않으면 시간이 오래 걸리거나, 수사가 어려워 질 때도 있다"
+    },
+    {
+      "id": "G8e",
+      "value": "12.6 km",
+      "label": "95% of urban dementia subjects are found within this distance of where they were last seen (n=336); 50% within 1.1 km",
+      "period": "Koester, Lost Person Behavior (2008)",
+      "source_name": "Robert Koester, Lost Person Behavior — Dementia",
+      "source_url": "https://www.dbs-sar.com/LPB/Dementia.pdf",
+      "quote": "Distance (horizontal) from the IPP (kilometers) … Urban n 336 … 50% 1.1 … 75% 3.2 … 95% 12.6"
+    },
+    {
+      "id": "G13",
+      "value": "8%",
+      "label": "of 325 US missing-dementia news reports: said they were trying to reach a former residence, workplace or a relative's home",
+      "period": "2003–2008 (published 2011)",
+      "source_name": "Rowe et al., BMC Geriatrics 11:28 (2011)",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3141319/",
+      "quote": "A small percentage of individuals (8%) indicated they were trying to get to a former residence or work location or a relative's home."
     }
   ]
 }
