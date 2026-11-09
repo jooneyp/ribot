@@ -3,8 +3,8 @@
 import "leaflet/dist/leaflet.css";
 
 import L, { type LatLngExpression, type LatLngTuple } from "leaflet";
-import { useEffect, useMemo, useState } from "react";
-import { Circle, CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
+import { useEffect, useMemo, useRef } from "react";
+import { Circle, CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
 
 import type { EraImagery, LatLng, MapViewProps } from "@/lib/contracts";
 import { haversineKm } from "@/lib/metrics";
@@ -13,15 +13,16 @@ const FALLBACK_CENTER: LatLngTuple = [36.5, 127.8];
 const ERA_COLORS = ["#b45309", "#0f766e", "#4f46e5", "#be123c", "#0369a1", "#7e22ce"];
 type PinKind = "candidate" | "home" | "hub" | "place" | "found";
 
-function pinIcon({ kind, label, color, badge, muted = false, present = false, shift = [0, 0] }: {
-  kind: PinKind; label: string; color?: string; badge?: boolean; muted?: boolean; present?: boolean; shift?: [number, number];
+function pinIcon({ kind, label, color, badge, muted = false, present = false }: {
+  kind: PinKind; label: string; color?: string; badge?: boolean; muted?: boolean; present?: boolean;
 }) {
   const symbol = kind === "home" ? "⌂" : kind === "hub" ? "🚆" : kind === "found" ? "★" : label;
   const size = present ? 42 : 36;
+  const iconWidth = badge ? 88 : size;
   return L.divIcon({
-    className: `ribot-pin-wrap${muted ? " is-muted" : ""}${kind === "found" ? " is-found" : ""}`,
+    className: `ribot-pin-wrap${muted ? " is-muted" : ""}${kind === "found" ? " is-found" : ""}${badge ? " has-imagery" : ""}`,
     html: `<div class="ribot-pin ribot-pin--${kind}" style="--pin-color:${color ?? "#20201e"};--pin-size:${size}px"><span>${symbol}</span></div>${badge ? '<span class="ribot-imagery-badge">Then/Now</span>' : ""}`,
-    iconSize: [badge ? 88 : size, size + (badge ? 18 : 0)], iconAnchor: [size / 2 - shift[0], size - shift[1]], tooltipAnchor: [shift[0], shift[1] - size + 4],
+    iconSize: [iconWidth, size + (badge ? 18 : 0)], iconAnchor: [iconWidth / 2, size], tooltipAnchor: [0, -size + 4],
   });
 }
 
@@ -40,52 +41,50 @@ function eraOverlapsDecade(start: number | null, end: number | null, decade: num
   return start <= decade + 9 && end >= decade;
 }
 
-function FitBounds({ points }: { points: LatLngExpression[] }) {
+function FitBounds({ points, preview }: { points: LatLngExpression[]; preview?: { center: LatLng; radiusKm: number } }) {
   const map = useMap();
   const signature = JSON.stringify(points);
+  const previewSignature = preview ? `${preview.center.lat},${preview.center.lng},${preview.radiusKm}` : "";
+  const shownPreview = useRef("");
   useEffect(() => {
     if (!points.length) return;
     map.invalidateSize();
-    if (points.length === 1) map.flyTo(points[0], 12, { duration: 0.8 });
-    else map.flyToBounds(L.latLngBounds(points), { paddingTopLeft: [70, 70], paddingBottomRight: [70, 70], maxZoom: 13, duration: 1 });
+    const showAll = () => {
+      if (points.length === 1) map.flyTo(points[0], 12, { duration: 0.8 });
+      else map.flyToBounds(L.latLngBounds(points), { paddingTopLeft: [70, 70], paddingBottomRight: [70, 70], maxZoom: 13, duration: 1 });
+    };
+    if (!preview || shownPreview.current === previewSignature) {
+      showAll();
+      return;
+    }
+
+    const latitudeRadius = preview.radiusKm / 111.32;
+    const longitudeRadius = latitudeRadius / Math.max(0.1, Math.cos(preview.center.lat * Math.PI / 180));
+    const circleBounds = L.latLngBounds(
+      [preview.center.lat - latitudeRadius, preview.center.lng - longitudeRadius],
+      [preview.center.lat + latitudeRadius, preview.center.lng + longitudeRadius],
+    );
+    map.flyToBounds(circleBounds, { padding: [150, 150], maxZoom: 14, duration: 0.65 });
+    const timer = window.setTimeout(() => {
+      shownPreview.current = previewSignature;
+      showAll();
+    }, 1850);
+    return () => window.clearTimeout(timer);
     // Coordinates are serialized so equivalent arrays do not retrigger the animation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, signature]);
+  }, [map, signature, previewSignature]);
   return null;
 }
 
-// A 3 km circle is a few pixels wide when the far hometown is also on screen.
-// Keep the true-scale circle and add a minimum-size halo so it stays visible.
-const MIN_CIRCLE_PX = 22;
-function RadiusCircle({ center, radiusKm, label, present }: { center: LatLng; radiusKm: number; label: string; present: boolean }) {
-  const map = useMap();
-  const [pixels, setPixels] = useState(0);
-  const measure = () => {
-    const origin = map.latLngToContainerPoint([center.lat, center.lng]);
-    const edge = map.latLngToContainerPoint([center.lat + radiusKm / 111.32, center.lng]);
-    setPixels(Math.abs(origin.y - edge.y));
-  };
-  useMapEvents({ zoomend: measure, moveend: measure });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(measure, [map, center.lat, center.lng, radiusKm]);
+function RadiusCircle({ center, radiusKm, label }: { center: LatLng; radiusKm: number; label: string }) {
   const style = { color: "#55554f", fillColor: "#7d7d76", fillOpacity: 0.22, weight: 2 };
-  const text = `${label} · ${distanceLabel(radiusKm)}`;
-  const tooltip = <Tooltip permanent direction="bottom" offset={[0, Math.max(pixels, MIN_CIRCLE_PX)]} className="ribot-circle-label">{text}</Tooltip>;
+  const latitudeRadius = radiusKm / 111.32;
   return <>
-    <Circle center={[center.lat, center.lng]} radius={radiusKm * 1000} pathOptions={style} interactive={false}>{pixels >= MIN_CIRCLE_PX && tooltip}</Circle>
-    {pixels < MIN_CIRCLE_PX && <CircleMarker center={[center.lat, center.lng]} radius={present ? MIN_CIRCLE_PX + 4 : MIN_CIRCLE_PX} pathOptions={style} interactive={false}>{tooltip}</CircleMarker>}
+    <Circle center={[center.lat, center.lng]} radius={radiusKm * 1000} pathOptions={style} interactive={false} />
+    <CircleMarker center={[center.lat - latitudeRadius, center.lng]} radius={0} pathOptions={{ opacity: 0, fillOpacity: 0 }} interactive={false}>
+      <Tooltip permanent direction="bottom" offset={[0, 8]} className="ribot-circle-label">{label} · {distanceLabel(radiusKm)}</Tooltip>
+    </CircleMarker>
   </>;
-}
-
-// Pins at (almost) the same spot, e.g. last seen = the station hub = the found point, are fanned out sideways.
-const FAN: [number, number][] = [[0, 0], [46, 0], [-46, 0], [0, -46], [46, -46], [-46, -46]];
-function fanOut(points: LatLng[]) {
-  const placed: LatLng[] = [];
-  return points.map((point) => {
-    const clash = placed.filter((other) => haversineKm(point, other) < 0.5).length;
-    placed.push(point);
-    return FAN[Math.min(clash, FAN.length - 1)];
-  });
 }
 
 const distanceLabel = (distance: number) => distance < 10 ? `${distance.toFixed(1)} km` : `${Math.round(distance)} km`;
@@ -124,36 +123,27 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
 
   const hubs = plan?.send_first.filter((hub) => hub.geo) ?? [];
   const candidates = plan?.candidates ?? [];
-  // Fan order = draw priority: last seen, hubs, candidates, found.
-  const shifts = fanOut([
-    ...(plan ? [plan.last_seen.geo] : []), ...hubs.map((hub) => hub.geo!), ...candidates.map((candidate) => candidate.geo),
-    ...(reveal ? [reveal.found.geo] : []),
-  ]);
-  const homeShift = plan ? shifts[0] : undefined;
-  const hubShift = (index: number) => shifts[(plan ? 1 : 0) + index];
-  const candidateShift = (index: number) => shifts[(plan ? 1 : 0) + hubs.length + index];
-  const foundShift = reveal ? shifts[shifts.length - 1] : undefined;
   const eras = profile?.eras ?? [];
 
   return (
     <div className={`ribot-map ${present ? "is-present" : ""}`}>
       <MapContainer center={FALLBACK_CENTER} zoom={7} zoomControl={!present} attributionControl={!present} className="h-full w-full">
         <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <FitBounds points={bounds} />
-        {plan && <RadiusCircle center={plan.circle.center} radiusKm={plan.circle.radius_km} label={plan.circle.label} present={present} />}
+        <FitBounds points={bounds} preview={plan ? { center: plan.circle.center, radiusKm: plan.circle.radius_km } : undefined} />
+        {plan && <RadiusCircle center={plan.circle.center} radiusKm={plan.circle.radius_km} label={plan.circle.label} />}
         {route && <Polyline positions={route} pathOptions={{ color: "#292927", dashArray: "8 10", weight: present ? 3 : 2.5 }}><Tooltip permanent direction="center" className="ribot-distance-label">{distanceLabel(routeDistance!)}</Tooltip></Polyline>}
         {reveal && nearestCandidate && <Polyline positions={[[reveal.found.geo.lat, reveal.found.geo.lng], [nearestCandidate.geo.lat, nearestCandidate.geo.lng]]} pathOptions={{ color: "#d94a31", weight: 2, opacity: 0.85 }} />}
-        {plan && <Marker position={[plan.last_seen.geo.lat, plan.last_seen.geo.lng]} icon={pinIcon({ kind: "home", label: "", present, shift: homeShift })} zIndexOffset={500}><Tooltip permanent direction="left" className="ribot-pin-label"><strong>Last seen</strong> · {plan.last_seen.label}</Tooltip></Marker>}
-        {candidates.map((candidate, index) => {
+        {plan && <Marker position={[plan.last_seen.geo.lat, plan.last_seen.geo.lng]} icon={pinIcon({ kind: "home", label: "", present })} zIndexOffset={500}><Tooltip permanent direction="left" className="ribot-pin-label"><strong>Last seen</strong> · {plan.last_seen.label}</Tooltip></Marker>}
+        {candidates.map((candidate) => {
           const matched = imageryFor(candidate.geo, imagery);
-          return <Marker key={`candidate-${candidate.rank}-${candidate.place_id}`} position={[candidate.geo.lat, candidate.geo.lng]} icon={pinIcon({ kind: "candidate", label: String(candidate.rank), badge: !!matched, present, shift: candidateShift(index) })} eventHandlers={matched && onSelectImagery ? { click: () => onSelectImagery(matched.id) } : undefined} zIndexOffset={300 - candidate.rank}><Tooltip permanent={candidate.rank <= 3} direction="right" className="ribot-pin-label"><strong>#{candidate.rank} {candidate.name}</strong><br />{distanceLabel(candidate.distance_km_from_last_seen)} from last seen</Tooltip></Marker>;
+          return <Marker key={`candidate-${candidate.rank}-${candidate.place_id}`} position={[candidate.geo.lat, candidate.geo.lng]} icon={pinIcon({ kind: "candidate", label: String(candidate.rank), badge: !!matched, present })} eventHandlers={matched && onSelectImagery ? { click: () => onSelectImagery(matched.id) } : undefined} zIndexOffset={300 - candidate.rank}><Tooltip permanent={candidate.rank <= 3} direction="right" className="ribot-pin-label"><strong>#{candidate.rank} {candidate.name}</strong><br />{distanceLabel(candidate.distance_km_from_last_seen)} from last seen</Tooltip></Marker>;
         })}
-        {hubs.map((hub, index) => <Marker key={`hub-${hub.name}-${index}`} position={[hub.geo!.lat, hub.geo!.lng]} icon={pinIcon({ kind: "hub", label: "", present, shift: hubShift(index) })} zIndexOffset={400}><Tooltip permanent direction="right" className="ribot-pin-label ribot-hub-label"><strong>Send first: {hub.name}</strong><br />{hub.line ? `${hub.line} · ` : ""}{hub.label}</Tooltip></Marker>)}
+        {hubs.map((hub, index) => <Marker key={`hub-${hub.name}-${index}`} position={[hub.geo!.lat, hub.geo!.lng]} icon={pinIcon({ kind: "hub", label: "", present })} zIndexOffset={400}><Tooltip permanent direction="right" className="ribot-pin-label ribot-hub-label"><strong>Send first: {hub.name}</strong><br />{hub.line ? `${hub.line} · ` : ""}{hub.label}</Tooltip></Marker>)}
         {!plan && profilePlaces.map(({ era, eraIndex, place, geo, visible }) => {
           const matched = imageryFor(geo, imagery);
           return <Marker key={`${era.id}-${place.id}`} position={[geo.lat, geo.lng]} opacity={visible ? 1 : 0.22} icon={pinIcon({ kind: "place", label: String(eraIndex + 1), color: ERA_COLORS[eraIndex % ERA_COLORS.length], badge: !!matched, muted: !visible, present })} eventHandlers={matched && onSelectImagery ? { click: () => onSelectImagery(matched.id) } : undefined} zIndexOffset={visible ? 200 : 0}><Tooltip key={String(visible)} permanent={visible} direction="right" className="ribot-pin-label"><strong>{place.name_then}</strong><br />{era.label} · {era.start_year ?? "unknown"}–{era.end_year ?? "unknown"}</Tooltip></Marker>;
         })}
-        {reveal && <Marker key={`found-${reveal.case_id}`} position={[reveal.found.geo.lat, reveal.found.geo.lng]} icon={pinIcon({ kind: "found", label: "", present, shift: foundShift })} zIndexOffset={1000}><Tooltip permanent direction="top" className="ribot-found-label"><strong>Found</strong> · {reveal.found.label}</Tooltip></Marker>}
+        {reveal && <Marker key={`found-${reveal.case_id}`} position={[reveal.found.geo.lat, reveal.found.geo.lng]} icon={pinIcon({ kind: "found", label: "", present })} zIndexOffset={1000}><Tooltip permanent direction="top" className="ribot-found-label"><strong>Found</strong> · {reveal.found.label}</Tooltip></Marker>}
       </MapContainer>
       {!plan && eras.length > 0 && <ol className="ribot-era-legend">
         {eras.map((era, eraIndex) => <li key={era.id} className={eraOverlapsDecade(era.start_year, era.end_year, decade) ? "" : "is-muted"}>
@@ -171,6 +161,7 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
         .ribot-osm-attribution a { color: inherit; text-decoration: underline; }
         .ribot-pin-wrap { background: transparent; border: 0; transition: opacity .45s ease, filter .45s ease; }
         .ribot-pin-wrap.is-muted { filter: grayscale(.8); }
+        .ribot-pin-wrap.has-imagery .ribot-pin { margin-inline: auto; }
         .ribot-pin { --pin-size: 36px; box-sizing: border-box; display: grid; place-items: center; width: var(--pin-size); height: var(--pin-size); color: #fff; background: var(--pin-color); border: 3px solid #fff; border-radius: 50% 50% 50% 12%; box-shadow: 0 4px 13px rgba(21,21,19,.32); font-weight: 850; font-size: 17px; line-height: 1; transform: rotate(-45deg); }
         .ribot-map.is-present .ribot-pin { font-size: 20px; }
         .ribot-pin > span { transform: rotate(45deg); }
