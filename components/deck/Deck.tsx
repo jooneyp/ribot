@@ -114,6 +114,24 @@ function Quote({ id }: { id: string }) {
   );
 }
 
+function UrbanSeventyFiveDistance() {
+  const card = numberById("G8e");
+  const percentiles = Array.from(
+    card.quote.matchAll(/(\d+)%\s+(\d+(?:\.\d+)?)/g),
+    (match) => ({ percentage: match[1], distanceKm: match[2] }),
+  );
+  const urban75 = percentiles.find(({ percentage }) => percentage === "75");
+
+  if (!urban75) throw new Error("Missing urban 75th-percentile distance in G8e");
+
+  return (
+    <p className={styles.layerMetric}>
+      <strong>{urban75.percentage}%</strong>
+      <span>within {urban75.distanceKm} km</span>
+    </p>
+  );
+}
+
 function JapanStat() {
   const card = numberById("J7a");
   const [missing, dead] = card.value.split(" / ");
@@ -212,26 +230,31 @@ const slides = [
     <Sources ids={["G8c", "G8d", "G10c", "G10b"]} />
   </section>,
   <section className={styles.slide} key="product">
-    <h2>
-      Her words tell you <em>WHEN</em> she is.
-      <span>Her family tells you <em>WHERE</em> that is.</span>
-    </h2>
-    <div className={styles.flow} aria-label="Words become an era, then places on today's map">
-      <div>
-        <span>spoken clues</span>
-        <strong>words</strong>
-      </div>
-      <i aria-hidden="true">→</i>
-      <div>
-        <span>young adulthood</span>
-        <strong>era</strong>
-      </div>
-      <i aria-hidden="true">→</i>
-      <div>
-        <span>home · station · factory</span>
-        <strong>places on today&apos;s map</strong>
-      </div>
+    <p className={styles.productKicker}>
+      Her words tell you <em>WHEN</em> she is. Her family tells you <em>WHERE</em> that is.
+    </p>
+    <h2>One plan from her life</h2>
+    <div className={styles.searchLayers} aria-label="Three layers in one search plan">
+      <article>
+        <h3>Her routine</h3>
+        <p className={styles.layerMetric}>
+          <strong>{numberById("G14").value}</strong>
+          <span>on a usual errand when they went missing</span>
+        </p>
+      </article>
+      <article>
+        <h3>Near danger</h3>
+        <UrbanSeventyFiveDistance />
+        <p className={styles.layerNote}>
+          {numberById("G15").value} — deaths close to home, near water and hills
+        </p>
+      </article>
+      <article>
+        <h3>Her past</h3>
+        <blockquote className={styles.layerQuote}>{numberById("G8c").value}</blockquote>
+      </article>
     </div>
+    <Sources ids={["G14", "G15", "G8e", "G8c"]} />
   </section>,
   <section className={`${styles.slide} ${styles.closing}`} key="closing">
     <p className={styles.closeLead}>
@@ -295,6 +318,9 @@ export function Deck() {
     >
       <div className={styles.frame}>
         {slides[active]}
+        <span className={styles.slideNumber} aria-label={`Slide ${active + 1} of ${SLIDE_COUNT}`}>
+          {active + 1} / {SLIDE_COUNT}
+        </span>
       </div>
     </main>
   );
