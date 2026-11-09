@@ -42,7 +42,7 @@ Deliverable = a 90-second screen-recorded video + this repo. Every screen in the
 ## Rules
 - No fabricated data: unknown = null and renders "unknown". No accuracy %, no hit rate, no market size, no "first in Korea".
 - English UI. Korean quotes and place names shown as-is with English gloss.
-- Secrets only in `.env.local` (OPENAI_API_KEY, optional KAKAO_REST_KEY). Never commit them.
+- No paid API keys for models. LLM calls go through an OpenAI-compatible endpoint set by `OPENAI_BASE_URL` (here: the local Codex subscription proxy, chat.completions + json_schema); speech-to-text through `RIBOT_STT_BASE_URL` (local Whisper). `.env.local` holds these plus optional KAKAO_REST_KEY and is never committed.
 - Family data (photo, local imagery, profile text) stays in `public/local/` and `data/local/` (gitignored). The repo is public.
 - Tests: only the four in `tests/` + `tsc`. No E2E, snapshots, coverage. Add a test only for a pure function whose output is shown on screen.
 
