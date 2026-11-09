@@ -164,22 +164,24 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
   return (
     <div className={`ribot-map ${present ? "is-present" : ""}`}>
       <MapContainer bounds={KOREA_BOUNDS} boundsOptions={{ padding: [28, 28] }} zoomControl={!present} attributionControl={false} className="h-full w-full">
-        <TileLayer attribution='&copy; OpenStreetMap contributors &copy; CARTO' url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+        {/* CARTO dark_all now answers every tile with an "API KEY REQUIRED" placeholder; Esri Dark Gray needs no key. */}
+        <TileLayer attribution="Esri, HERE, Garmin, &copy; OpenStreetMap contributors" url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}" maxNativeZoom={16} />
+        <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}" maxNativeZoom={16} />
         <FitBounds points={bounds} maxZoom={clues ? 15 : 13} compact={!!clues} />
         {clues && <ClueRadius center={clues.center} radiusKm={clues.radius_km} />}
         {clues?.spots.map((spot, index) => <Marker key={`clue-${index}-${spot.name}`} position={[spot.geo.lat, spot.geo.lng]} icon={clueIcon(index + 1, present)} zIndexOffset={600 - index}><Tooltip permanent={index < 3} direction={index % 2 === 0 ? "right" : "left"} className="ribot-clue-label"><strong>#{index + 1} {spot.name}</strong></Tooltip></Marker>)}
-        {plan && <RadiusCircle center={plan.circle.center} radiusKm={plan.circle.radius_km} label={plan.hazard_ring_km ? "95% ring" : plan.circle.label} />}
-        {plan?.hazard_ring_km && <RadiusCircle center={plan.circle.center} radiusKm={plan.hazard_ring_km} label="75% ring" secondary />}
-        {route && <Polyline positions={route} pathOptions={{ color: "#f0f1eb", dashArray: "10 12", opacity: 0.9, weight: present ? 4 : 3 }}><Tooltip permanent direction="center" className="ribot-distance-label">{distanceLabel(routeDistance!)}</Tooltip></Polyline>}
+        {!clues && plan && <RadiusCircle center={plan.circle.center} radiusKm={plan.circle.radius_km} label={plan.hazard_ring_km ? "95% ring" : plan.circle.label} />}
+        {!clues && plan?.hazard_ring_km && <RadiusCircle center={plan.circle.center} radiusKm={plan.hazard_ring_km} label="75% ring" secondary />}
+        {!clues && route && <Polyline positions={route} pathOptions={{ color: "#f0f1eb", dashArray: "10 12", opacity: 0.9, weight: present ? 4 : 3 }}><Tooltip permanent direction="center" className="ribot-distance-label">{distanceLabel(routeDistance!)}</Tooltip></Polyline>}
         {reveal && nearestCandidate && <Polyline positions={[[reveal.found.geo.lat, reveal.found.geo.lng], [nearestCandidate.geo.lat, nearestCandidate.geo.lng]]} pathOptions={{ className: "ribot-reveal-line", color: "#ff7058", weight: 2, opacity: 0.9 }}><Tooltip permanent direction="right" offset={[78, 0]} className="ribot-reveal-distance-label">{distanceLabel(nearestDistance!)}</Tooltip></Polyline>}
-        {plan && <Marker position={[plan.last_seen.geo.lat, plan.last_seen.geo.lng]} icon={pinIcon({ kind: "home", label: "", present })} zIndexOffset={500}><Tooltip permanent direction="left" className="ribot-pin-label ribot-last-seen-label"><strong>Last seen</strong> · {plan.last_seen.label}</Tooltip></Marker>}
-        {candidates.map((candidate) => {
+        {!clues && plan && <Marker position={[plan.last_seen.geo.lat, plan.last_seen.geo.lng]} icon={pinIcon({ kind: "home", label: "", present })} zIndexOffset={500}><Tooltip permanent direction="left" className="ribot-pin-label ribot-last-seen-label"><strong>Last seen</strong> · {plan.last_seen.label}</Tooltip></Marker>}
+        {!clues && candidates.map((candidate) => {
           const matched = imageryFor(candidate.geo, imagery);
           const color = candidate.layer === "routine" ? "#0f9f91" : candidate.layer === "past" ? "#f05239" : undefined;
           return <Marker key={`candidate-${candidate.rank}-${candidate.place_id}`} position={[candidate.geo.lat, candidate.geo.lng]} icon={pinIcon({ kind: "candidate", label: String(candidate.rank), color, badge: !!matched, present })} eventHandlers={matched && onSelectImagery ? { click: () => onSelectImagery(matched.id) } : undefined} zIndexOffset={300 - candidate.rank}><Tooltip permanent={candidate.rank <= 3} direction="right" className={`ribot-pin-label${candidate.rank === 1 ? " ribot-rank-one-label" : ""}`}><strong>#{candidate.rank} {candidate.name}</strong><br />{distanceLabel(candidate.distance_km_from_last_seen)} from last seen</Tooltip></Marker>;
         })}
-        {hazards.map((hazard, index) => <Marker key={`hazard-${hazard.kind}-${hazard.name}-${index}`} position={[hazard.geo.lat, hazard.geo.lng]} icon={hazardIcon(hazard.kind, present)} zIndexOffset={350 - index}><Tooltip permanent direction={index % 2 === 0 ? "right" : "left"} offset={[0, (index - (hazards.length - 1) / 2) * 28]} className={`ribot-hazard-label ribot-hazard-label--${hazard.kind}`}><strong>{hazard.name}</strong> · {distanceLabel(hazard.distance_km)}</Tooltip></Marker>)}
-        {hubs.map((hub, index) => <Marker key={`hub-${hub.name}-${index}`} position={[hub.geo!.lat, hub.geo!.lng]} icon={pinIcon({ kind: "hub", label: "", present })} zIndexOffset={400}><Tooltip direction="right" className="ribot-pin-label ribot-hub-label"><strong>Send first: {hub.name}</strong><br />{hub.line ? `${hub.line} · ` : ""}{hub.label}</Tooltip></Marker>)}
+        {!clues && hazards.map((hazard, index) => <Marker key={`hazard-${hazard.kind}-${hazard.name}-${index}`} position={[hazard.geo.lat, hazard.geo.lng]} icon={hazardIcon(hazard.kind, present)} zIndexOffset={350 - index}><Tooltip permanent direction={index % 2 === 0 ? "right" : "left"} offset={[0, (index - (hazards.length - 1) / 2) * 28]} className={`ribot-hazard-label ribot-hazard-label--${hazard.kind}`}><strong>{hazard.name}</strong> · {distanceLabel(hazard.distance_km)}</Tooltip></Marker>)}
+        {!clues && hubs.map((hub, index) => <Marker key={`hub-${hub.name}-${index}`} position={[hub.geo!.lat, hub.geo!.lng]} icon={pinIcon({ kind: "hub", label: "", present })} zIndexOffset={400}><Tooltip direction="right" className="ribot-pin-label ribot-hub-label"><strong>Send first: {hub.name}</strong><br />{hub.line ? `${hub.line} · ` : ""}{hub.label}</Tooltip></Marker>)}
         {!plan && profilePlaces.map(({ era, eraIndex, place, geo, visible }) => {
           const matched = imageryFor(geo, imagery);
           return <Marker key={`${era.id}-${place.id}`} position={[geo.lat, geo.lng]} opacity={visible ? 1 : 0.22} icon={pinIcon({ kind: "place", label: String(eraIndex + 1), color: ERA_COLORS[eraIndex % ERA_COLORS.length], badge: !!matched, muted: !visible, present })} eventHandlers={matched && onSelectImagery ? { click: () => onSelectImagery(matched.id) } : undefined} zIndexOffset={visible ? 200 : 0}><Tooltip key={String(visible)} permanent={visible} direction="right" className="ribot-pin-label"><strong>{place.name_then}</strong><br />{era.label} · {era.start_year ?? "unknown"}–{era.end_year ?? "unknown"}</Tooltip></Marker>;
@@ -192,7 +194,7 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
           <span><strong>{era.label}</strong><br />{era.start_year ?? "unknown"}–{era.end_year ?? "unknown"}</span>
         </li>)}
       </ol>}
-      <div className="ribot-osm-attribution">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO</a></div>
+      <div className="ribot-osm-attribution">Esri, HERE, Garmin, © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors</div>
       <style jsx global>{`
         .ribot-map { position: relative; height: 100%; min-height: 360px; width: 100%; overflow: hidden; background: #171a1c; }
         .ribot-map .leaflet-container { font-family: inherit; background: #171a1c; }

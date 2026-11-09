@@ -80,6 +80,15 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
     return () => window.cancelAnimationFrame(frame);
   }, [reveal, textReveal?.revealed]);
 
+  const phoneRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!clues) return;
+    const frame = window.requestAnimationFrame(() => {
+      phoneRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [clues]);
+
   if (error)
     return (
       <aside className="results">
@@ -139,7 +148,7 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
         <strong className="intent">{sentenceCase(era.intent)}</strong>
       </section>
       {plan && phoneStep && (
-        <section className="result-section phone-call-step">
+        <section ref={phoneRef} className="result-section phone-call-step">
           <div className="phone-call-grid">
             <div className="picked-up-card">
               <span className="section-label">She picked up</span>
