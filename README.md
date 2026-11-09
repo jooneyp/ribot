@@ -19,7 +19,8 @@ It is a focused search-planning demo, built for a 90-second screen-recorded stor
 pnpm i
 
 # .env.local
-OPENAI_API_KEY=...
+OPENAI_BASE_URL=http://127.0.0.1:8650/v1
+OPENAI_API_KEY=unused
 KAKAO_REST_KEY=...
 
 pnpm dev
