@@ -3,8 +3,8 @@
 import "leaflet/dist/leaflet.css";
 
 import L, { type LatLngBoundsExpression, type LatLngExpression, type LatLngTuple } from "leaflet";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Circle, CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Circle, CircleMarker, MapContainer, Marker, Pane, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
 
 import type { EraImagery, Hazard, LatLng, MapViewProps } from "@/lib/contracts";
 import { haversineKm } from "@/lib/metrics";
@@ -54,11 +54,11 @@ function eraOverlapsDecade(start: number | null, end: number | null, decade: num
   return start <= decade + 9 && end >= decade;
 }
 
-function FitBounds({ points, maxZoom = 13, compact = false }: { points: LatLngExpression[]; maxZoom?: number; compact?: boolean }) {
+function FitBounds({ points, maxZoom = 13, compact = false, enabled = true }: { points: LatLngExpression[]; maxZoom?: number; compact?: boolean; enabled?: boolean }) {
   const map = useMap();
   const signature = JSON.stringify({ points, maxZoom, compact });
   useEffect(() => {
-    if (!points.length) return;
+    if (!enabled || !points.length) return;
     map.invalidateSize();
     if (points.length === 1) map.flyTo(points[0], 12, { duration: 0.85 });
     else map.flyToBounds(L.latLngBounds(points), {
@@ -69,7 +69,73 @@ function FitBounds({ points, maxZoom = 13, compact = false }: { points: LatLngEx
     });
     // Coordinates are serialized so equivalent arrays do not retrigger the animation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, signature]);
+  }, [enabled, map, signature]);
+  return null;
+}
+
+function ZoomTiles() {
+  const map = useMap();
+  const [satellite, setSatellite] = useState(map.getZoom() >= 16);
+  useMapEvents({
+    zoom: () => setSatellite(map.getZoom() >= 16),
+    zoomend: () => setSatellite(map.getZoom() >= 16),
+  });
+  return <>
+    <TileLayer opacity={satellite ? 0 : 1} attribution="Esri, HERE, Garmin, &copy; OpenStreetMap contributors" url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}" maxNativeZoom={16} maxZoom={19} />
+    <TileLayer opacity={satellite ? 0 : 1} url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}" maxNativeZoom={16} maxZoom={19} />
+    <Pane name="satellite-tiles" className="ribot-satellite-pane" style={{ zIndex: 201 }}>
+      <TileLayer
+        pane="satellite-tiles"
+        opacity={satellite ? 1 : 0}
+        attribution="Esri, Maxar, Earthstar Geographics"
+        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+        maxNativeZoom={19}
+        maxZoom={19}
+      />
+    </Pane>
+  </>;
+}
+
+const wait = (milliseconds: number) => new Promise<void>((resolve) => window.setTimeout(resolve, milliseconds));
+
+function CameraTour({ enabled, points, lastSeen, routes }: {
+  enabled: boolean;
+  points: LatLngExpression[];
+  lastSeen: LatLngExpression | null;
+  routes: NonNullable<MapViewProps["routes"]> | null;
+}) {
+  const map = useMap();
+  const ran = useRef(false);
+  useEffect(() => {
+    if (!enabled || ran.current || !lastSeen || !routes?.routes[0]?.reach.walked.length || !points.length) return;
+    ran.current = true;
+    let cancelled = false;
+    const route = routes.routes[0];
+    const overview = L.latLngBounds(points);
+    const walked = route.reach.walked;
+    const follow = Array.from({ length: 4 }, (_, index) => walked[Math.min(walked.length - 1, Math.round((walked.length - 1) * (index + 1) / 4))]);
+    (window as typeof window & { __ribotTourDone?: boolean }).__ribotTourDone = false;
+    void (async () => {
+      map.flyToBounds(overview, { padding: [100, 100], maxZoom: 13, duration: 2 });
+      await wait(2000);
+      if (cancelled) return;
+      map.flyTo(lastSeen, 16, { duration: 2 });
+      await wait(2000);
+      for (const point of follow) {
+        if (cancelled) return;
+        map.flyTo(point, 17, { duration: 1 });
+        await wait(1000);
+      }
+      if (cancelled) return;
+      map.flyTo([route.reach.point.lat, route.reach.point.lng], 18, { duration: 2 });
+      await wait(2000);
+      if (cancelled) return;
+      map.flyToBounds(overview, { padding: [100, 100], maxZoom: 13, duration: 2 });
+      await wait(2000);
+      if (!cancelled) (window as typeof window & { __ribotTourDone?: boolean }).__ribotTourDone = true;
+    })();
+    return () => { cancelled = true; };
+  }, [enabled, lastSeen, map, points, routes]);
   return null;
 }
 
@@ -131,6 +197,16 @@ function clueIcon(rank: number, present: boolean) {
   });
 }
 
+function cctvIcon() {
+  return L.divIcon({
+    className: "ribot-cctv-wrap",
+    html: '<div class="ribot-cctv" aria-hidden="true">▰</div>',
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+    tooltipAnchor: [9, 0],
+  });
+}
+
 function ClueRadius({ center, radiusKm }: { center: LatLng; radiusKm: number }) {
   const latitudeRadius = radiusKm / 111.32;
   return <>
@@ -156,8 +232,11 @@ function RadiusCircle({ center, radiusKm, label, secondary = false }: { center: 
 }
 
 const distanceLabel = (distance: number) => distance < 10 ? `${distance.toFixed(1)} km` : `${Math.round(distance)} km`;
+const evenlySample = <T,>(items: T[], limit: number) => items.length <= limit
+  ? items
+  : Array.from({ length: limit }, (_, index) => items[Math.round(index * (items.length - 1) / (limit - 1))]);
 
-export default function MapView({ plan, profile, decade, reveal, imagery, onSelectImagery, present = false, clues }: MapViewProps) {
+export default function MapView({ plan, profile, decade, reveal, imagery, onSelectImagery, present = false, clues, routes, tour = false }: MapViewProps) {
   const [collisionState, setCollisionState] = useState<{ key: string; ids: Set<string> }>({ key: "", ids: new Set() });
   const profilePlaces = useMemo(() => (profile?.eras ?? []).flatMap((era, eraIndex) =>
     era.places.filter((place) => place.geo).map((place) => ({
@@ -250,17 +329,23 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
 
   return (
     <div className={`ribot-map ${present ? "is-present" : ""}`}>
-      <MapContainer bounds={KOREA_BOUNDS} boundsOptions={{ padding: [28, 28] }} zoomControl={!present} attributionControl={false} className="h-full w-full">
-        {/* CARTO dark_all now answers every tile with an "API KEY REQUIRED" placeholder; Esri Dark Gray needs no key. */}
-        <TileLayer attribution="Esri, HERE, Garmin, &copy; OpenStreetMap contributors" url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}" maxNativeZoom={16} />
-        <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}" maxNativeZoom={16} />
-        <FitBounds points={bounds} maxZoom={clues ? 15 : 13} compact={!!clues} />
+      <MapContainer bounds={KOREA_BOUNDS} boundsOptions={{ padding: [28, 28] }} maxZoom={19} zoomControl={!present} attributionControl={false} className="h-full w-full">
+        <ZoomTiles />
+        <FitBounds points={bounds} maxZoom={clues ? 15 : 13} compact={!!clues} enabled={!tour || !routes} />
+        <CameraTour enabled={present && tour} points={bounds} lastSeen={plan?.last_seen.geo ?? null} routes={routes ?? null} />
         {!clues && plan && <LabelCollisionManager key={labelLayoutKey} layoutKey={labelLayoutKey} onChange={updateSuppressedLabels} />}
         {clues && <ClueRadius center={clues.center} radiusKm={clues.radius_km} />}
         {clues?.spots.map((spot, index) => <Marker key={`clue-${index}-${spot.name}`} position={[spot.geo.lat, spot.geo.lng]} icon={clueIcon(index + 1, present)} zIndexOffset={600 - index}><Tooltip permanent={index < 3} direction={index % 2 === 0 ? "right" : "left"} className="ribot-clue-label"><strong>#{index + 1} {spot.name}</strong></Tooltip></Marker>)}
         {!clues && plan && <RadiusCircle center={plan.circle.center} radiusKm={plan.circle.radius_km} label={plan.hazard_ring_km ? "95% ring" : plan.circle.label} />}
         {!clues && plan?.hazard_ring_km && <RadiusCircle center={plan.circle.center} radiusKm={plan.hazard_ring_km} label="75% ring" secondary />}
-        {!clues && route && routeDistance != null && routeDistance >= 0.25 && <Polyline positions={route} pathOptions={{ color: "#f0f1eb", dashArray: "10 12", opacity: 0.9, weight: present ? 4 : 3 }}><Tooltip permanent direction="center" className="ribot-distance-label">{distanceLabel(routeDistance)}</Tooltip></Polyline>}
+        {!clues && !routes && route && routeDistance != null && routeDistance >= 0.25 && <Polyline positions={route} pathOptions={{ color: "#f0f1eb", dashArray: "10 12", opacity: 0.9, weight: present ? 4 : 3 }}><Tooltip permanent direction="center" className="ribot-distance-label">{distanceLabel(routeDistance)}</Tooltip></Polyline>}
+        {!clues && routes?.routes.map((walkingRoute) => {
+          const color = walkingRoute.layer === "routine" ? "#28c7b7" : walkingRoute.layer === "past" ? "#ff7058" : "#a8aaa4";
+          return <Polyline key={`route-${walkingRoute.layer}-${walkingRoute.to_place_id}`} positions={walkingRoute.coords} pathOptions={{ color, opacity: 0.72, weight: 3 }}><Tooltip sticky>{walkingRoute.to_name} · {distanceLabel(walkingRoute.distance_km)}</Tooltip></Polyline>;
+        })}
+        {!clues && routes?.routes.map((walkingRoute) => <Polyline key={`walked-${walkingRoute.layer}-${walkingRoute.to_place_id}`} positions={walkingRoute.reach.walked} pathOptions={{ className: "ribot-walked-line", color: walkingRoute.layer === "routine" ? "#5fffe8" : walkingRoute.layer === "past" ? "#ff9a87" : "#e2e3de", opacity: 1, weight: present ? 8 : 6 }} />)}
+        {!clues && routes?.routes.map((walkingRoute) => <CircleMarker key={`reach-${walkingRoute.layer}-${walkingRoute.to_place_id}`} center={[walkingRoute.reach.point.lat, walkingRoute.reach.point.lng]} radius={present ? 10 : 8} pathOptions={{ className: "ribot-reach-marker", color: "#fff", fillColor: "#d9ff62", fillOpacity: 1, weight: 3 }}><Tooltip permanent direction="right" className="ribot-reach-label"><strong>{walkingRoute.reach.hours} h · could be here</strong></Tooltip></CircleMarker>)}
+        {!clues && routes?.routes.flatMap((walkingRoute) => evenlySample(walkingRoute.cctvs, 16).map((cctv, index) => <Marker key={`cctv-${walkingRoute.to_place_id}-${index}`} position={[cctv.lat, cctv.lng]} icon={cctvIcon()} zIndexOffset={550}><Tooltip direction="right">Public CCTV{cctv.address ? ` · ${cctv.address}` : ""}</Tooltip></Marker>))}
         {reveal && nearestCandidate && <Polyline positions={[[reveal.found.geo.lat, reveal.found.geo.lng], [nearestCandidate.geo.lat, nearestCandidate.geo.lng]]} pathOptions={{ className: "ribot-reveal-line", color: "#ff7058", weight: 2, opacity: 0.9 }}><Tooltip permanent direction="right" offset={[78, 0]} className="ribot-reveal-distance-label">{distanceLabel(nearestDistance!)}</Tooltip></Polyline>}
         {!clues && plan && <Marker position={[plan.last_seen.geo.lat, plan.last_seen.geo.lng]} icon={pinIcon({ kind: "home", label: "", present })} zIndexOffset={500}><Tooltip permanent direction="top" offset={[0, -20]} className="ribot-pin-label ribot-last-seen-label ribot-priority-label ribot-label-id-last ribot-label-priority-100 ribot-label-order-0"><strong>Last seen</strong> · {plan.last_seen.label}</Tooltip></Marker>}
         {!clues && candidates.map((candidate) => {
@@ -292,10 +377,11 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
       {outsideCandidates.length > 0 && <div className="ribot-outside-note">
         {outsideCandidates.map((candidate) => <span key={candidate.place_id}>+ {candidate.name} · {Math.round(candidate.distance_km_from_last_seen)} km (outside view)</span>)}
       </div>}
-      <div className="ribot-osm-attribution">Esri, HERE, Garmin, © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors</div>
+      <div className="ribot-osm-attribution">Esri, Maxar, Earthstar Geographics · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a></div>
       <style jsx global>{`
         .ribot-map { position: relative; height: 100%; min-height: 360px; width: 100%; overflow: hidden; background: #171a1c; }
         .ribot-map .leaflet-container { font-family: inherit; background: #171a1c; }
+        .ribot-map .ribot-satellite-pane { filter: brightness(.75); }
         .ribot-map .leaflet-control-attribution { color: #d8d9d4; background: rgba(13,15,16,.82); font-size: 10px; }
         .ribot-map .leaflet-control-attribution a { color: #fff; }
         .ribot-osm-attribution { position: absolute; z-index: 500; right: 0; bottom: 0; padding: 3px 6px; color: #c9cbc6; background: rgba(13,15,16,.82); font-size: 10px; line-height: 1.2; }
@@ -311,6 +397,9 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
         .ribot-pin--hub { font-size: 22px; background: #fff; }
         .ribot-pin--found { transform: rotate(0); border-radius: 50%; background: #f05239; font-size: 25px; }
         .ribot-clue-wrap { background: transparent; border: 0; }
+        .ribot-cctv-wrap { background: transparent; border: 0; }
+        .ribot-cctv { display: grid; place-items: center; width: 14px; height: 11px; color: #11130f; background: #f3f2eb; border: 1px solid #11130f; border-radius: 2px; box-shadow: 0 1px 5px rgba(0,0,0,.75); font-size: 8px; transform: rotate(-8deg); }
+        .ribot-cctv::after { content: ""; position: absolute; right: -3px; width: 4px; height: 6px; background: #f3f2eb; clip-path: polygon(0 20%,100% 0,100% 100%,0 80%); }
         .ribot-clue-pin { box-sizing: border-box; display: grid; place-items: center; width: var(--clue-size); height: var(--clue-size); color: #fff; background: #8b5cf6; border: 3px solid #f3e8ff; border-radius: 50%; box-shadow: 0 4px 13px rgba(0,0,0,.62); font-size: 17px; font-weight: 900; line-height: 1; }
         .ribot-map.is-present .ribot-clue-pin { font-size: 20px; }
         .ribot-hazard-wrap { background: transparent; border: 0; }
@@ -333,6 +422,9 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
         .ribot-map .ribot-hazard-label--water { border-color: #43bdf5; }
         .ribot-map .ribot-hazard-label--hill { border-color: #b8d65b; }
         .ribot-map .ribot-distance-label, .ribot-map .ribot-reveal-distance-label { color: #11130f; background: #f5f5ef; border-color: #fff; font-size: 24px; font-weight: 900; }
+        .ribot-map .ribot-reach-label { color: #11130f; background: #d9ff62; border-color: #f0ffbd; font-size: 17px; }
+        .ribot-map .ribot-walked-line { filter: drop-shadow(0 0 5px currentColor); }
+        .ribot-map .ribot-reach-marker { animation: ribot-reach-pulse 1.45s ease-out infinite; transform-box: fill-box; transform-origin: center; }
         .ribot-map .ribot-reveal-distance-label { color: #fff; background: #c83f2a; }
         .ribot-map .ribot-rank-one-label { font-size: 24px; border-color: rgba(217,255,98,.8); }
         .ribot-map .ribot-last-seen-label { font-size: 22px; }
@@ -349,6 +441,7 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
         .ribot-map .ribot-reveal-line { animation: ribot-line-in .45s .42s both; }
         @keyframes ribot-line-in { from { opacity: 0; stroke-dasharray: 1 12; } to { opacity: .9; stroke-dasharray: none; } }
         @keyframes ribot-fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes ribot-reach-pulse { 0%, 100% { transform: scale(.82); filter: drop-shadow(0 0 0 rgba(217,255,98,.9)); } 55% { transform: scale(1.18); filter: drop-shadow(0 0 10px rgba(217,255,98,.9)); } }
         @media (prefers-reduced-motion: reduce) { .ribot-pin-wrap { transition: none; } .ribot-pin-wrap.is-found .ribot-pin, .ribot-map .ribot-found-label { animation: none; } }
       `}</style>
     </div>

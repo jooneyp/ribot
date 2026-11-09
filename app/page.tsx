@@ -8,7 +8,7 @@ import ThenNow from "@/components/map/ThenNow";
 import HookStage from "@/components/panels/HookStage";
 import ResultPanel, { unknown } from "@/components/panels/ResultPanel";
 import { api } from "@/lib/api";
-import type { CluesResult, EraImagery, LatLng, LifeProfile, ReplayCase, ReplayRun, RevealMetrics } from "@/lib/contracts";
+import type { CluesResult, EraImagery, LatLng, LifeProfile, ReplayCase, ReplayRun, RevealMetrics, RoutesResult } from "@/lib/contracts";
 
 const MapView = dynamic(() => import("@/components/map/MapView"), { ssr: false });
 
@@ -95,6 +95,7 @@ function imageryNear(imagery: EraImagery[], range: [number | null, number | null
 
 export default function Home() {
   const [present, setPresent] = useState(false);
+  const [tour, setTour] = useState(false);
   const [tab, setTab] = useState<Tab>("replay");
   const [cases, setCases] = useState<CaseWithSubtitles[]>([]);
   const [selectedId, setSelectedId] = useState(HOOK_ID);
@@ -102,6 +103,8 @@ export default function Home() {
   const [run, setRun] = useState<ReplayRun | null>(null);
   const [reveal, setReveal] = useState<RevealMetrics | null>(null);
   const [clues, setClues] = useState<CluesResult | null>(null);
+  const [routes, setRoutes] = useState<RoutesResult | null>(null);
+  const [elapsedHours, setElapsedHours] = useState(2);
   const [typed, setTyped] = useState<string[]>([]);
   const [typingDone, setTypingDone] = useState(false);
   const [revealReady, setRevealReady] = useState(false);
@@ -125,7 +128,9 @@ export default function Home() {
   const imageryItem = imagery.find((i) => i.id === openImagery) ?? null;
 
   useEffect(() => {
-    setPresent(new URLSearchParams(window.location.search).has("present"));
+    const search = new URLSearchParams(window.location.search);
+    setPresent(search.has("present"));
+    setTour(search.get("tour") === "1");
     api.cases()
       .then((all) => setCases((all.filter((c) => c.role !== "README only") as CaseWithSubtitles[])
         .toSorted((a, b) => CASE_ORDER.indexOf(a.id) - CASE_ORDER.indexOf(b.id))))
@@ -134,7 +139,7 @@ export default function Home() {
   }, []);
 
   const resetRun = useCallback(() => {
-    setRun(null); setReveal(null); setClues(null); setError(null); setHookRevealed(false); setTextRevealed(false); setRevealReady(false); setOpenImagery(null);
+    setRun(null); setReveal(null); setClues(null); setRoutes(null); setElapsedHours(2); setError(null); setHookRevealed(false); setTextRevealed(false); setRevealReady(false); setOpenImagery(null);
   }, []);
 
   // Reset on tab/case change.
@@ -216,6 +221,19 @@ export default function Home() {
       setBusy(null);
     }
   }, [profileText, resetRun]);
+
+  useEffect(() => {
+    if (!run?.plan) {
+      setRoutes(null);
+      return;
+    }
+    let cancelled = false;
+    setRoutes(null);
+    api.routes(run.plan, elapsedHours)
+      .then((result) => { if (!cancelled) setRoutes(result); })
+      .catch((e) => { if (!cancelled) setError(message(e, "Could not load walking routes.")); });
+    return () => { cancelled = true; };
+  }, [elapsedHours, run?.plan]);
 
   const doReveal = useCallback(async () => {
     if (!run?.plan) return;
@@ -460,6 +478,8 @@ export default function Home() {
                 imagery={imagery}
                 onSelectImagery={setOpenImagery}
                 present={present}
+                routes={routes}
+                tour={tour}
               />
               {tab === "profile" && profile && (
                 <div className="timeline-card">
@@ -528,6 +548,9 @@ export default function Home() {
           onReveal={() => void doReveal()}
           onFindClues={() => void findClues()}
           clues={clues}
+          routes={routes}
+          elapsedHours={elapsedHours}
+          onElapsedHoursChange={setElapsedHours}
           phoneStep={selectedCase?.phone_words?.length ? {
             words: selectedCase.phone_words,
             translations: selectedCase.phone_words_en ?? [],

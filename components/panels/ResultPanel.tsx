@@ -1,7 +1,7 @@
 import { haversineKm } from "@/lib/metrics";
 import { useEffect, useRef } from "react";
 import numbersData from "@/data/numbers.json";
-import type { Candidate, CluesResult, EraImagery, LifeProfile, ReplayRun, RevealMetrics } from "@/lib/contracts";
+import type { Candidate, CluesResult, EraImagery, LifeProfile, ReplayRun, RevealMetrics, RoutesResult } from "@/lib/contracts";
 import HighlightedWords from "./HighlightedWords";
 import ProfileSummary from "./ProfileSummary";
 
@@ -59,6 +59,8 @@ type Props = {
   thenNow: EraImagery[];
   textReveal: TextReveal | null;
   clues: CluesResult | null;
+  routes: RoutesResult | null;
+  elapsedHours: number;
   phoneStep: {
     words: string[];
     translations: string[];
@@ -69,9 +71,10 @@ type Props = {
   onThenNow: (id: string) => void;
   onReveal: () => void;
   onFindClues: () => void;
+  onElapsedHoursChange: (hours: number) => void;
 };
 
-export default function ResultPanel({ run, reveal, profile, words, wordTranslations, showWordEvidence, possessivePronoun, busy, error, thenNow, textReveal, clues, phoneStep, sampleLabel, onThenNow, onReveal, onFindClues }: Props) {
+export default function ResultPanel({ run, reveal, profile, words, wordTranslations, showWordEvidence, possessivePronoun, busy, error, thenNow, textReveal, clues, routes, elapsedHours, phoneStep, sampleLabel, onThenNow, onReveal, onFindClues, onElapsedHoursChange }: Props) {
   const metricsRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -214,6 +217,23 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
       )}
       {plan && (
         <>
+          <section className="result-section by-now">
+            <label htmlFor="elapsed-hours">
+              <span>Hours since last seen <b>{elapsedHours} h</b></span>
+              <input id="elapsed-hours" type="range" min="0.5" max="6" step="0.5" value={elapsedHours} onChange={(event) => onElapsedHoursChange(Number(event.target.value))} />
+            </label>
+            <span className="section-label">By now</span>
+            {routes ? (
+              <ul>
+                {routes.routes.map((route) => (
+                  <li key={`${route.layer}-${route.to_place_id}`}>
+                    <b>{route.to_name}</b>: {route.reach.km.toFixed(1)} km of {route.distance_km.toFixed(1)} km walked
+                    {route.cctvs.length > 0 ? ` · ${route.cctvs.length} public CCTVs on the way` : ""}
+                  </li>
+                ))}
+              </ul>
+            ) : <p>Calculating walking routes…</p>}
+          </section>
           <section className="result-section check-layers">
             <span className="section-label">Check first</span>
             {visibleLayers.map((layer) => (
