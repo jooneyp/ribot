@@ -192,11 +192,20 @@ export default function Home() {
     }
   }, [run]);
 
-  // Present mode: Space = next step.
+  // Present mode: arrows choose a replay; Space advances its current step.
   useEffect(() => {
     if (!present) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.code !== "Space" || ["INPUT", "TEXTAREA", "SELECT"].includes((event.target as HTMLElement).tagName)) return;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes((event.target as HTMLElement).tagName)) return;
+      if ((event.code === "ArrowRight" || event.code === "ArrowLeft") && tab === "replay" && cases.length > 0) {
+        event.preventDefault();
+        const current = Math.max(0, cases.findIndex((item) => item.id === selectedId));
+        const direction = event.code === "ArrowRight" ? 1 : -1;
+        const next = (current + direction + cases.length) % cases.length;
+        setSelectedId(cases[next].id);
+        return;
+      }
+      if (event.code !== "Space") return;
       event.preventDefault();
       if (busy) return;
       if (isHook) {
@@ -209,7 +218,7 @@ export default function Home() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [busy, buildProfile, doReveal, hookRevealed, isHook, present, profile, reveal, revealReady, run, runEra, tab, typingDone]);
+  }, [busy, buildProfile, cases, doReveal, hookRevealed, isHook, present, profile, reveal, revealReady, run, runEra, selectedId, tab, typingDone]);
 
   const decades = useMemo(() => {
     const years = profile?.eras.flatMap((e) => [e.start_year, e.end_year]).filter((y): y is number => y != null) ?? [];
@@ -241,7 +250,7 @@ export default function Home() {
     : selectedCase?.her_words_en ?? (selectedCase?.report_words_en ? [selectedCase.report_words_en] : []);
 
   return (
-    <main className={`app-shell ${present ? "present" : ""}`}>
+    <main className={`app-shell ${present ? "present" : ""} ${present && tab === "replay" && !isHook ? "present-replay" : ""}`}>
       <header className="topbar">
         <div>
           <span className="brand-mark" aria-hidden>R</span>
@@ -263,7 +272,6 @@ export default function Home() {
           {tab === "replay" && (
             <div className="panel-body">
               <div className="eyebrow">Published case replay</div>
-              <div className="present-case" aria-hidden={!present}>{CASE_TITLES[selectedId] ?? selectedId}</div>
               <div className="case-list">
                 {cases.map((c) => (
                   <button key={c.id} className={selectedId === c.id ? "selected" : ""} onClick={() => setSelectedId(c.id)}>

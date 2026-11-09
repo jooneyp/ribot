@@ -47,7 +47,8 @@ export default function HookStage({ hookCase, typed, typingDone, run, busy, reve
           <section className="hook-guess">
             <span className="section-label">Ribot&apos;s guess</span>
             <p className="hook-guess-meta">
-              Living in ~{run.era.living_in.approx_year ?? "unknown"} · age ~{run.era.living_in.age ?? "unknown"}
+              <span className="hook-guess-unit">Living in ~{run.era.living_in.approx_year ?? "unknown"}</span>{" "}
+              <span className="hook-guess-unit">· age ~{run.era.living_in.age ?? "unknown"}</span>
             </p>
             <p className="hook-guess-label">{run.era.living_in.label}</p>
             <HighlightedWords words={herWords} translations={herWordsEn} evidence={run.era.evidence} className="hook-evidence" />
