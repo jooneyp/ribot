@@ -22,7 +22,19 @@ const CASE_TITLES: Record<string, string> = { "hook-1962": "The question", "repl
 const IMAGERY_YEARS = 15;
 const IMAGERY_NEAR_KM = 15;
 
-const message = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
+const message = (e: unknown, fallback: string) => {
+  if (!(e instanceof Error)) return fallback;
+  const status = e.message.match(/\b([45]\d{2})\b/)?.[1];
+  if (status) return `Request failed with status ${status}.`;
+  const clean = e.message
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&[a-z0-9#]+;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return clean ? clean.slice(0, 160) : fallback;
+};
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const lines = (text: string) => text.split("\n").map((w) => w.trim()).filter(Boolean);
 const approxKm = (a: LatLng, b: LatLng) => Math.hypot((a.lat - b.lat) * 111, (a.lng - b.lng) * 88);
@@ -379,7 +391,6 @@ export default function Home() {
               {imageryItem && (
                 <div className="then-now-overlay">
                   <ThenNow imagery={imageryItem} onClose={() => setOpenImagery(null)} />
-                  <button className="close" onClick={() => setOpenImagery(null)} aria-label="Close">×</button>
                 </div>
               )}
             </>

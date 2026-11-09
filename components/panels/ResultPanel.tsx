@@ -1,9 +1,14 @@
+import { useEffect, useRef } from "react";
 import type { EraImagery, LifeProfile, ReplayRun, RevealMetrics } from "@/lib/contracts";
 import HighlightedWords from "./HighlightedWords";
 import ProfileSummary from "./ProfileSummary";
 
 export const unknown = (value: string | number | null | undefined) => value ?? "unknown";
 const km = (value: number | null | undefined) => (value == null ? "unknown" : `${value.toFixed(1)} km`);
+const sentenceCase = (value: string) => {
+  const words = value.replaceAll("_", " ").toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+};
 
 type Props = {
   run: ReplayRun | null;
@@ -21,6 +26,16 @@ type Props = {
 };
 
 export default function ResultPanel({ run, reveal, profile, words, wordTranslations, showWordEvidence, possessivePronoun, busy, error, thenNow, onThenNow, onReveal }: Props) {
+  const metricsRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!reveal) return;
+    const frame = window.requestAnimationFrame(() => {
+      metricsRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [reveal]);
+
   if (error)
     return (
       <aside className="results">
@@ -44,9 +59,11 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
   return (
     <aside className="results" aria-live="polite">
       <div className="eyebrow">Era estimate</div>
-      <p className={`result-meta ${hasKnownTime ? "" : "unknown-time"}`}>
-        {era.living_in.approx_year == null ? "Year unknown" : `~${era.living_in.approx_year}`} · age {era.living_in.age == null ? "unknown" : `~${era.living_in.age}`}
-      </p>
+      {hasKnownTime && (
+        <p className="result-meta">
+          {era.living_in.approx_year == null ? "Year unknown" : `~${era.living_in.approx_year}`} · age {era.living_in.age == null ? "unknown" : `~${era.living_in.age}`}
+        </p>
+      )}
       <h2>Living in: {unknown(era.living_in.label)}</h2>
       {showWordEvidence && words.length > 0 && era.evidence.length > 0 && <HighlightedWords words={words} translations={wordTranslations} evidence={era.evidence} className="result-words" />}
       {era.evidence.length > 0 && (
@@ -65,7 +82,7 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
       )}
       <section className="result-section">
         <span className="section-label">Intent</span>
-        <strong className="intent">{era.intent.replaceAll("_", " ")}</strong>
+        <strong className="intent">{sentenceCase(era.intent)}</strong>
       </section>
       {plan && !reveal && <button className="primary reveal-button" onClick={onReveal}>Reveal</button>}
       {thenNow.length > 0 && (
@@ -128,7 +145,7 @@ export default function ResultPanel({ run, reveal, profile, words, wordTranslati
         </>
       )}
       {reveal && (
-        <section className="metrics">
+        <section className="metrics" ref={metricsRef}>
           <span className="section-label">Found · {reveal.found.label}</span>
           <p className="metrics-line">
             Found <b>{km(reveal.home_to_found_km)}</b> from home ·{" "}

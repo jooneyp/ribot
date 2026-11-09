@@ -41,7 +41,7 @@ export default function HookStage({ hookCase, typed, typingDone, run, busy, reve
 
   return (
     <div className="hook-stage">
-      <div className="eyebrow">Her words · {personDescription(hookCase.age_band, hookCase.sex)}</div>
+      <div className="eyebrow demographic-label">Her words · {personDescription(hookCase.age_band, hookCase.sex)}</div>
       {run ? (
         <div className={`hook-comparison ${revealed ? "revealed" : ""}`}>
           <section className="hook-guess">
