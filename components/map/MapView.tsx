@@ -104,6 +104,16 @@ function ZoomTiles() {
 
 const wait = (milliseconds: number) => new Promise<void>((resolve) => window.setTimeout(resolve, milliseconds));
 
+/** Resolve once every visible tile in the map has finished loading (max `limit` ms), so camera moves never show gray gaps. */
+async function tilesLoaded(map: L.Map, limit = 3500) {
+  const start = Date.now();
+  while (Date.now() - start < limit) {
+    const pending = map.getContainer().querySelectorAll(".leaflet-tile-container img.leaflet-tile:not(.leaflet-tile-loaded)").length;
+    if (pending === 0) return;
+    await wait(120);
+  }
+}
+
 function CameraTour({ enabled, points, lastSeen, routes }: {
   enabled: boolean;
   points: LatLngExpression[];
@@ -123,21 +133,22 @@ function CameraTour({ enabled, points, lastSeen, routes }: {
     (window as typeof window & { __ribotTourDone?: boolean }).__ribotTourDone = false;
     void (async () => {
       map.flyToBounds(overview, { padding: [100, 100], maxZoom: 13, duration: 2 });
-      await wait(2000);
+      await wait(2000); await tilesLoaded(map);
       if (cancelled) return;
       map.flyTo(lastSeen, 16, { duration: 2 });
-      await wait(2000);
+      await wait(2000); await tilesLoaded(map);
       for (const point of follow) {
         if (cancelled) return;
         map.flyTo(point, 17, { duration: 1 });
-        await wait(1000);
+        await wait(1000); await tilesLoaded(map, 1500);
       }
       if (cancelled) return;
       map.flyTo([route.reach.point.lat, route.reach.point.lng], 18, { duration: 2 });
-      await wait(2000);
+      await wait(2000); await tilesLoaded(map);
+      await wait(1200);
       if (cancelled) return;
       map.flyToBounds(overview, { padding: [100, 100], maxZoom: 13, duration: 2 });
-      await wait(2000);
+      await wait(2000); await tilesLoaded(map);
       if (!cancelled) (window as typeof window & { __ribotTourDone?: boolean }).__ribotTourDone = true;
     })();
     return () => { cancelled = true; };
@@ -353,7 +364,7 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
       <MapContainer bounds={KOREA_BOUNDS} boundsOptions={{ padding: [28, 28] }} maxZoom={19} zoomControl={!present} attributionControl={false} className="h-full w-full">
         <ZoomTiles />
         <FitBounds points={bounds} maxZoom={clues ? 15 : 13} compact={!!clues} enabled={!tour || !routes} />
-        <CameraTour enabled={present && tour} points={bounds} lastSeen={plan?.last_seen.geo ?? null} routes={routes ?? null} />
+        <CameraTour enabled={tour} points={bounds} lastSeen={plan?.last_seen.geo ?? null} routes={routes ?? null} />
         {!clues && plan && <LabelCollisionManager key={labelLayoutKey} layoutKey={labelLayoutKey} onChange={updateSuppressedLabels} />}
         {clues && <ClueRadius center={clues.center} radiusKm={clues.radius_km} />}
         {clues?.spots.map((spot, index) => <Marker key={`clue-${index}-${spot.name}`} position={[spot.geo.lat, spot.geo.lng]} icon={clueIcon(index + 1, present)} zIndexOffset={600 - index}><Tooltip permanent={index < 3} direction={index % 2 === 0 ? "right" : "left"} className="ribot-clue-label"><strong>#{index + 1} {spot.name}</strong></Tooltip></Marker>)}
