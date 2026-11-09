@@ -70,7 +70,7 @@ async function nominatim(query: string): Promise<GeoResult | null> {
   return pending;
 }
 
-/** Kakao Local if KAKAO_REST_KEY, else OSM Nominatim (1 req/s, User-Agent). Cached. null if not found. */
+/** Kakao Local (address, then keyword) if KAKAO_REST_KEY; else or on miss OSM Nominatim (1 req/s, User-Agent). Cached. null if not found. */
 export async function geocode(query: string): Promise<GeoResult | null> {
   const normalized = query.trim();
   if (!normalized) return null;
@@ -80,7 +80,13 @@ export async function geocode(query: string): Promise<GeoResult | null> {
   const key = process.env.KAKAO_REST_KEY?.trim();
   let result: GeoResult | null = null;
   if (key) {
-    result = (await kakao(normalized, "address", key)) ?? (await kakao(normalized, "keyword", key));
+    // Address search first: region names ("전남 나주") resolve to their centroid; keyword search
+    // would return an arbitrary POI inside the region. POI names fall through to keyword search.
+    try {
+      result = (await kakao(normalized, "address", key)) ?? (await kakao(normalized, "keyword", key));
+    } catch {
+      result = null; // Kakao outage or quota: fall back to Nominatim below.
+    }
   }
   if (!result) result = await nominatim(normalized);
   cache.set(normalized, result);
