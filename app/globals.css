@@ -30,7 +30,7 @@ h1 span { color: var(--muted); font-weight: 450; }
 .workspace { display: grid; grid-template-columns: 380px minmax(0, 1fr) 420px; min-height: 0; }
 .input-panel, .results { min-width: 0; min-height: 0; background: color-mix(in srgb, var(--panel) 94%, transparent); }
 .input-panel { border-right: 1px solid var(--line); display: flex; flex-direction: column; }
-.results { border-left: 1px solid var(--line); padding: 28px 28px 40px; overflow: auto; }
+.results { height: 100%; border-left: 1px solid var(--line); padding: 28px 28px 64px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
 
 /* Left panel */
 .tabs { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); flex: none; }
@@ -118,6 +118,7 @@ input { height: 44px; }
 
 /* Right panel */
 .results h2 { font-size: 28px; line-height: 1.15; letter-spacing: -0.03em; margin: 8px 0 18px; }
+.result-sample-note { margin: 9px 0 13px; color: #f2c66d; font-size: 16px; line-height: 1.35; }
 .result-meta { color: var(--text); margin: 14px 0 6px; font-size: 44px; line-height: 1.02; font-weight: 800; letter-spacing: -0.05em; }
 .result-words { margin: 18px 0; font-size: 20px; }
 .why-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; color: var(--muted); font-size: 18px; line-height: 1.4; }
@@ -149,6 +150,8 @@ input { height: 44px; }
 .assumption { color: var(--muted); font-size: 18px; margin: 8px 0 0; line-height: 1.5; }
 .assumption span { display: block; }
 .assumption span + span { margin-top: 4px; color: var(--text); }
+.outside-view-note { display: grid; gap: 3px; margin: 8px 0 0; color: #f2c66d; font-size: 16px; line-height: 1.35; }
+.outside-view-note span { display: block; }
 .hub { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; }
 .hub-icon { font-size: 24px; line-height: 1; }
 .hub b, .hub small { display: block; }
