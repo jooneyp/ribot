@@ -130,3 +130,9 @@ function client(): OpenAI {
 }
 
 const textModel = () => process.env.RIBOT_LLM_MODEL || "gpt-4.1";
+
+/** Route helper: upstream failure → JSON body with the provider's error code (e.g. insufficient_quota), never a blank 500. */
+export function llmErrorBody(error: unknown): { error: string; code: string | null } {
+  const err = error as { message?: string; code?: string | null; type?: string };
+  return { error: err?.message ?? "LLM call failed", code: err?.code ?? err?.type ?? null };
+}

@@ -17,10 +17,16 @@ process.stdout.write(JSON.stringify({
 NODE
 )"
 
-result="$(curl --fail --silent --show-error \
+response="$(curl --silent --show-error -w '\n%{http_code}' \
   -H 'content-type: application/json' \
   --data "$payload" \
   "http://localhost:${port}/api/era")"
+status="${response##*$'\n'}"
+result="${response%$'\n'*}"
+if [[ "$status" != 2* ]]; then
+  echo "HTTP $status: $result" >&2
+  exit 1
+fi
 
 printf '%s\n' "$result" | node -e '
 let body = "";

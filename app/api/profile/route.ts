@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { ProfileInput } from "@/lib/contracts";
-import { extractProfile } from "@/lib/llm";
+import { extractProfile, llmErrorBody } from "@/lib/llm";
 
 export const runtime = "nodejs";
 
@@ -10,6 +10,10 @@ export async function POST(request: Request) {
   const parsed = ProfileInput.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid ProfileInput" }, { status: 400 });
 
-  const result = await extractProfile(parsed.data);
-  return NextResponse.json(result);
+  try {
+    return NextResponse.json(await extractProfile(parsed.data));
+  } catch (error) {
+    console.error("extractProfile failed", error);
+    return NextResponse.json(llmErrorBody(error), { status: 502 });
+  }
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { transcribe } from "@/lib/llm";
+import { llmErrorBody, transcribe } from "@/lib/llm";
 
 export const runtime = "nodejs";
 
@@ -12,5 +12,10 @@ export async function POST(request: Request) {
   }
 
   const filename = audio instanceof File && audio.name ? audio.name : "audio.webm";
-  return NextResponse.json({ text: await transcribe(audio, filename) });
+  try {
+    return NextResponse.json({ text: await transcribe(audio, filename) });
+  } catch (error) {
+    console.error("transcribe failed", error);
+    return NextResponse.json(llmErrorBody(error), { status: 502 });
+  }
 }
