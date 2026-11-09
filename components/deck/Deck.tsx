@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 
 import numberData from "@/data/numbers.json";
 import styles from "./deck.module.css";
@@ -34,10 +34,13 @@ function Sources({ ids }: { ids: string[] }) {
 
   return (
     <footer className={styles.sources}>
-      {sources.map((source) => (
-        <a key={source.source_url} href={source.source_url}>
-          {source.source_name} · {shortUrl(source.source_url)}
-        </a>
+      {sources.map((source, index) => (
+        <Fragment key={source.source_url}>
+          {index > 0 && <span aria-hidden="true"> · </span>}
+          <a href={source.source_url}>
+            {source.source_name} · {shortUrl(source.source_url)}
+          </a>
+        </Fragment>
       ))}
     </footer>
   );
@@ -75,13 +78,19 @@ function SinceNineCounter() {
     return () => window.clearInterval(timer);
   }, [rate.value]);
 
-  if (count === null) return null;
-
   return (
-    <p className={styles.counter}>
-      Since 9:00 AM today: <strong>~{count.toLocaleString("en-US")}</strong>{" "}
-      reports in Korea <span>(on average)</span>
-    </p>
+    <div className={styles.rateLines}>
+      <p>
+        One report every ~{Math.round(Number(rate.value))} minutes, on average (
+        {rate.period.match(/\d{4}/)?.[0] ?? rate.period})
+      </p>
+      {count !== null && (
+        <p>
+          Since 9:00 AM today: <strong>~{count.toLocaleString("en-US")}</strong>{" "}
+          reports in Korea
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -105,6 +114,22 @@ function Quote({ id }: { id: string }) {
   );
 }
 
+function JapanStat() {
+  const card = numberById("J7a");
+  const [missing, dead] = card.value.split(" / ");
+
+  return (
+    <div className={`${styles.statCompact} ${styles.japanStat}`}>
+      <span>
+        <strong>{missing}</strong> went missing
+      </span>
+      <span>
+        <strong>{dead}</strong> found dead
+      </span>
+    </div>
+  );
+}
+
 const slides = [
   <section className={`${styles.slide} ${styles.opening}`} key="opening">
     <p className={styles.eyebrow}>My grandmother has dementia.</p>
@@ -120,7 +145,7 @@ const slides = [
       <SinceNineCounter />
     </div>
     <div className={styles.statRow}>
-      <Stat id="J7a" compact />
+      <JapanStat />
       <Stat id="K4" compact />
     </div>
     <Sources ids={["K1", "K1-rate", "J7a", "K4"]} />
@@ -240,9 +265,6 @@ export function Deck() {
     >
       <div className={styles.frame}>
         {slides[active]}
-        <div className={styles.slideNumber} aria-label={`Slide ${active + 1} of ${SLIDE_COUNT}`}>
-          {String(active + 1).padStart(2, "0")} / {String(SLIDE_COUNT).padStart(2, "0")}
-        </div>
       </div>
     </main>
   );
