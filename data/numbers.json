@@ -144,6 +144,24 @@
       "source_name": "Project Lifesaver International",
       "source_url": "https://projectlifesaver.org/about-us/",
       "quote": "The organization was founded in 1999 in Chesapeake, Virginia."
+    },
+    {
+      "id": "K2e",
+      "value": "40 minutes",
+      "label": "average time to find a person wearing a GPS wander detector, 2023 (12 hours before the program)",
+      "period": "2023",
+      "source_name": "Korea Policy Briefing (KNPA · Ministry of Health and Welfare), 2024",
+      "source_url": "https://www.korea.kr/news/policyNewsView.do?newsId=148931151",
+      "quote": "사업 도입 이전에는 치매환자의 평균 발견 소요시간이 12시간이었다면 2023년에는 배회감지기 착용 시 40분까지 단축되었고"
+    },
+    {
+      "id": "K6",
+      "value": "“Without a region, CCTV takes a long time.”",
+      "label": "Police: many missing people with dementia carry no phone, so searches fall back to CCTV",
+      "period": "2021",
+      "source_name": "Financial News (police official), 2021-11-15",
+      "source_url": "https://www.fnnews.com/news/202111151705127679",
+      "quote": "치매노인 실종 수색·수사 시 실종자가 휴대전화를 소지하지 않아 위치추적에 어려움을 겪는 사례가 많다 ... 이 경우 폐쇄회로(CC)TV에 의존해야 하는데 지역이 특정되지 않으면 시간이 오래 걸리거나, 수사가 어려워 질 때도 있다"
     }
   ]
 }
