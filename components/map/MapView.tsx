@@ -130,27 +130,37 @@ function CameraTour({ enabled, points, lastSeen, routes }: {
     const overview = L.latLngBounds(points);
     const walked = route.reach.walked;
     const follow = Array.from({ length: 4 }, (_, index) => walked[Math.min(walked.length - 1, Math.round((walked.length - 1) * (index + 1) / 4))]);
-    (window as typeof window & { __ribotTourDone?: boolean }).__ribotTourDone = false;
+    const w = window as typeof window & { __ribotTourDone?: boolean; __ribotTourStops?: { name: string; t: number }[] };
+    w.__ribotTourDone = false;
+    w.__ribotTourStops = [];
+    // Each stop: move, wait until its imagery is loaded, then hold still and record the moment (for the video editor).
+    const stop = async (name: string, hold: number) => {
+      await tilesLoaded(map, 6000);
+      w.__ribotTourStops?.push({ name, t: Date.now() });
+      await wait(hold);
+    };
     void (async () => {
       map.flyToBounds(overview, { padding: [100, 100], maxZoom: 13, duration: 2 });
-      await wait(2000); await tilesLoaded(map);
-      if (cancelled) return;
+      await wait(2000); if (cancelled) return;
+      await stop("overview", 2500);
       map.flyTo(lastSeen, 17, { duration: 2 });
-      await wait(2000); await tilesLoaded(map);
-      // Follow the walked line at a fixed zoom: panning keeps lines crisp (zooming rescales them mid-flight).
-      for (const point of follow) {
+      await wait(2000); if (cancelled) return;
+      await stop("last_seen", 1200);
+      for (const [index, point] of follow.entries()) {
         if (cancelled) return;
         map.panTo(point, { animate: true, duration: 1.2, easeLinearity: 1 });
-        await wait(1200); await tilesLoaded(map, 1500);
+        await wait(1200);
+        await stop(`follow_${index}`, 1200);
       }
       if (cancelled) return;
       map.flyTo([route.reach.point.lat, route.reach.point.lng], 18, { duration: 2 });
-      await wait(2000); await tilesLoaded(map);
-      await wait(1200);
+      await wait(2000);
+      await stop("reach", 1500);
       if (cancelled) return;
       map.flyToBounds(overview, { padding: [100, 100], maxZoom: 13, duration: 2 });
-      await wait(2000); await tilesLoaded(map);
-      if (!cancelled) (window as typeof window & { __ribotTourDone?: boolean }).__ribotTourDone = true;
+      await wait(2000);
+      await stop("overview_end", 1500);
+      if (!cancelled) w.__ribotTourDone = true;
     })();
     return () => { cancelled = true; };
   }, [enabled, lastSeen, map, points, routes]);
