@@ -4,6 +4,8 @@ Ribot turns a missing person with dementia's own words into the era of life they
 It joins that era to a family-filled life profile and ranks those places on today's map.
 It is a focused search-planning demo, built for a 90-second screen-recorded story.
 
+Live demo: [ribot.pjy.pizza](https://ribot.pjy.pizza)
+
 ## Scenes
 
 1. **Hook** — infer an era from five verbatim lines, then reveal the family's published account.
@@ -47,8 +49,10 @@ Open [http://localhost:3000](http://localhost:3000). Add `?mock=1` for fixture-b
 - **K4 — 970,000:** [Korea Ministry of Health and Welfare, 2023 dementia epidemiology survey](https://www.mohw.go.kr/board.es?mid=a10503010100&bid=0027&act=view&list_no=1484959)
 - **G8b — 25%:** [Robert Koester, *Lost Person Behavior* — Dementia](https://www.dbs-sar.com/LPB/Dementia.pdf)
 - **G8a — 1%:** [Robert Koester, *Lost Person Behavior* — Dementia](https://www.dbs-sar.com/LPB/Dementia.pdf)
+- **K2e — 40 minutes:** [Korea Policy Briefing, KNPA · Ministry of Health and Welfare](https://www.korea.kr/news/policyNewsView.do?newsId=148931151)
 - **K2a — 8.2 hours:** [Yonhap, Korean National Police Agency data](https://www.yna.co.kr/view/AKR20241014065400530)
 - **K5a — 2.9%:** [Yonhap, Rep. Jang Jong-tae](https://www.yna.co.kr/view/AKR20241014065400530)
+- **K6 — “Without a region, CCTV takes a long time.”:** [Financial News, police official](https://www.fnnews.com/news/202111151705127679)
 - **K3a — 50.2%:** [Newsis, Rep. Seo Young-seok](https://mobile.newsis.com/view/NISX20260902_0003773655)
 - **G8c — “Figure out where in the past…”:** [Robert Koester, *Lost Person Behavior* — Dementia](https://www.dbs-sar.com/LPB/Dementia.pdf)
 - **G8d — “List locations even if…”:** [Robert Koester, *Lost Person Behavior* — Dementia](https://www.dbs-sar.com/LPB/Dementia.pdf)
