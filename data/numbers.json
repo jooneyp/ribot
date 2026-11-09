@@ -1,0 +1,149 @@
+{
+  "_rule": "Only VERIFIED numbers with verbatim source quotes. Deck and README read from here only.",
+  "numbers": [
+    {
+      "id": "K1",
+      "value": "16,586",
+      "label": "dementia missing-person reports in Korea, 2025 (14,527 in 2022)",
+      "period": "2025",
+      "source_name": "Newsis (Korean National Police Agency data via Rep. Seo Young-seok), 2026-09-02",
+      "source_url": "https://mobile.newsis.com/view/NISX20260902_0003773655",
+      "quote": "치매환자 실종 신고는 2022년 1만4527건에서 2023년 1만4677건, 2024년 1만5502건, 2025년 1만6586건으로 계속 증가했다."
+    },
+    {
+      "id": "K1-rate",
+      "value": "31.7",
+      "label": "minutes between reports on average (525,600 min ÷ 16,586 reports in 2025)",
+      "period": "2025 (derived)",
+      "source_name": "Derived from K1",
+      "source_url": "https://mobile.newsis.com/view/NISX20260902_0003773655",
+      "quote": "치매환자 실종 신고는 ... 2025년 1만6586건"
+    },
+    {
+      "id": "J7a",
+      "value": "17,345 / 573",
+      "label": "people with dementia reported missing in Japan, 2025 / confirmed dead",
+      "period": "2025",
+      "source_name": "National Police Agency of Japan (令和7年 行方不明者 PDF)",
+      "source_url": "https://www.npa.go.jp/publications/statistics/safetylife/R07yukuefumeisha.pdf",
+      "quote": "令和７年の認知症行方不明者数は、１万7,345人（前年比776人減少）であり、依然として高い水準で推移している。 / 死亡確認 | 573"
+    },
+    {
+      "id": "K4",
+      "value": "970,000",
+      "label": "people with dementia in Korea, 2025 (projected to pass 1 million in 2026)",
+      "period": "2025",
+      "source_name": "Ministry of Health and Welfare (2023 dementia epidemiology survey)",
+      "source_url": "https://www.mohw.go.kr/board.es?mid=a10503010100&bid=0027&act=view&list_no=1484959",
+      "quote": "2025년의 치매 환자 수는 97만 명(치매 유병률 9.17%)으로, 치매 환자 수가 100만 명을 넘는 시점은 2026년, 200만 명을 넘는 시점은 2044년으로 추정되었다."
+    },
+    {
+      "id": "G8b",
+      "value": "25%",
+      "label": "fatality rate if not found within the first 24 hours",
+      "period": "Koester, Lost Person Behavior (2008)",
+      "source_name": "Robert Koester, Lost Person Behavior — Dementia",
+      "source_url": "https://www.dbs-sar.com/LPB/Dementia.pdf",
+      "quote": "There is a 25% fatality rate if the subject is not found within the first 24 hours."
+    },
+    {
+      "id": "G8a",
+      "value": "1%",
+      "label": "respond when their name is called",
+      "period": "Koester, Lost Person Behavior (2008)",
+      "source_name": "Robert Koester, Lost Person Behavior — Dementia",
+      "source_url": "https://www.dbs-sar.com/LPB/Dementia.pdf",
+      "quote": "They will not cry out for help or respond to shouts—only 1% are responsive."
+    },
+    {
+      "id": "K2a",
+      "value": "8.2 hours",
+      "label": "average time to find a missing person with dementia in Korea, 2023",
+      "period": "2023",
+      "source_name": "Yonhap (KNPA data via Rep. Jang Jong-tae), 2024-10-14",
+      "source_url": "https://www.yna.co.kr/view/AKR20241014065400530",
+      "quote": "작년에는 실종 치매 환자를 발견하는데 평균 8.2시간이 소요돼 2019년 8.0시간보다 길어졌다."
+    },
+    {
+      "id": "K5a",
+      "value": "2.9%",
+      "label": "of long-term-care dementia patients use a GPS wander detector (4,293 of 149,605)",
+      "period": "2023",
+      "source_name": "Yonhap (Rep. Jang Jong-tae), 2024-10-14",
+      "source_url": "https://www.yna.co.kr/view/AKR20241014065400530",
+      "quote": "작년 배회감지기 이용자는 4천293명으로, 노인장기요양보험 상 치매 환자 14만9천605명의 2.9%에 불과했다."
+    },
+    {
+      "id": "K3a",
+      "value": "50.2%",
+      "label": "fingerprint pre-registration rate, 14 years into the program",
+      "period": "June 2026",
+      "source_name": "Newsis (Rep. Seo Young-seok), 2026-09-02",
+      "source_url": "https://mobile.newsis.com/view/NISX20260902_0003773655",
+      "quote": "지문 사전등록률은 제도 도입 14년째인 올해도 6월말 기준 누적 50.2%에 그쳤다."
+    },
+    {
+      "id": "G8c",
+      "value": "“Figure out where in the past the subject is currently living.”",
+      "label": "Search manual, dementia chapter",
+      "period": "Koester, Lost Person Behavior (2008)",
+      "source_name": "Robert Koester, Lost Person Behavior — Dementia",
+      "source_url": "https://www.dbs-sar.com/LPB/Dementia.pdf",
+      "quote": "Figure out where in the past the subject is currently “living” in order to determine possible destinations (e.g., a former residence, a work place)."
+    },
+    {
+      "id": "G8d",
+      "value": "“List locations even if they no longer exist.”",
+      "label": "Search manual questionnaire",
+      "period": "Koester, Lost Person Behavior (2008)",
+      "source_name": "Robert Koester, Lost Person Behavior — Dementia",
+      "source_url": "https://www.dbs-sar.com/LPB/Dementia.pdf",
+      "quote": "List all of the subject’s addresses, dwelling types, and how long he has lived at each address going back to childhood. List locations even if they no longer exist."
+    },
+    {
+      "id": "G10c",
+      "value": "George Herbert, 2011",
+      "label": "UK Herbert Protocol is named after a veteran who died looking for his childhood home",
+      "period": "2021",
+      "source_name": "Police Scotland",
+      "source_url": "https://www.scotland.police.uk/what-s-happening/news/2021/may/herbert-protocol-introduced-in-the-lothians-and-scottish-borders/",
+      "quote": "It originated in Norfolk and takes its name after Normandy landings veteran George Herbert, who lived with dementia and died in 2011, after going missing whilst looking for his childhood home."
+    },
+    {
+      "id": "G10b",
+      "value": "“Any important past addresses including childhood addresses or past jobs.”",
+      "label": "Herbert Protocol form field",
+      "period": "current",
+      "source_name": "Thames Valley Police — Herbert Protocol form",
+      "source_url": "https://www.thamesvalley.police.uk/SysSiteAssets/media/downloads/central/advice/herbert-protocol/herbert-protocol-form.pdf",
+      "quote": "Any important past addresses including childhood addresses or past jobs."
+    },
+    {
+      "id": "G12",
+      "value": "Ribot’s law (1881)",
+      "label": "recent memories are lost before older ones",
+      "period": "1881 (cited 2004)",
+      "source_name": "Wixted, Psychological Review 111(4) 2004",
+      "source_url": "https://pubmed.ncbi.nlm.nih.gov/15482065/",
+      "quote": "T. Ribot's (1881) law of retrograde amnesia states that brain damage impairs recently formed memories to a greater extent than older memories"
+    },
+    {
+      "id": "G11a",
+      "value": "2016",
+      "label": "Japan: QR nail stickers to identify wandering elders (Iruma City)",
+      "period": "2016",
+      "source_name": "Sankei News",
+      "source_url": "https://www.sankei.com/article/20161118-XXLCVNI2ORLONLWETFW2RDVKDU/",
+      "quote": "埼玉県入間市は身元特定番号などが登録されたＱＲコードを印刷した「爪Ｑシール」などを無料交付する「徘徊身元確認支援サービス」を今月からスタートした。"
+    },
+    {
+      "id": "G11c",
+      "value": "1999",
+      "label": "US: Project Lifesaver radio wristbands",
+      "period": "1999",
+      "source_name": "Project Lifesaver International",
+      "source_url": "https://projectlifesaver.org/about-us/",
+      "quote": "The organization was founded in 1999 in Chesapeake, Virginia."
+    }
+  ]
+}

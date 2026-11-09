@@ -1,0 +1,69 @@
+{
+  "last_seen": {
+    "label": "Home (dev fixture)",
+    "geo": {
+      "lat": 37.4874,
+      "lng": 127.1015,
+      "display_name": "수서역, 서울 강남구",
+      "source": "fixture"
+    }
+  },
+  "elapsed_hours": 1,
+  "circle": {
+    "center": {
+      "lat": 37.4874,
+      "lng": 127.1015
+    },
+    "radius_km": 3,
+    "label": "radius search",
+    "assumption": "assumed 3 km/h walk, capped at 5 km"
+  },
+  "candidates": [
+    {
+      "rank": 1,
+      "place_id": "p-iksan",
+      "name": "익산 (hometown)",
+      "era_id": "era-child",
+      "geo": {
+        "lat": 35.9407,
+        "lng": 126.9465,
+        "display_name": "익산역, 전북 익산시",
+        "source": "fixture"
+      },
+      "distance_km_from_last_seen": 172.4,
+      "score": 0.81,
+      "score_parts": {
+        "era_match": 1,
+        "reachability": 0.9,
+        "confidence": 0.9
+      },
+      "why": "Hometown; she said she is going home."
+    }
+  ],
+  "send_first": [
+    {
+      "name": "수서역 SRT",
+      "kind": "train",
+      "line": "SRT 호남선",
+      "geo": {
+        "lat": 37.4874,
+        "lng": 127.1015,
+        "display_name": "수서역, 서울 강남구",
+        "source": "fixture"
+      },
+      "label": "proposed, verify"
+    }
+  ],
+  "finder_card": {
+    "ko": [
+      "따지지 마세요.",
+      "\"고향 가세요? 같이 가요.\"",
+      "천천히, 옆에서 걸어 주세요."
+    ],
+    "en": [
+      "Don't argue.",
+      "\"Going home? Let's go together.\"",
+      "Walk slowly, beside her."
+    ]
+  }
+}

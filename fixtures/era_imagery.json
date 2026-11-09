@@ -1,0 +1,21 @@
+[
+  {
+    "id": "dev",
+    "place_label": "DEV placeholder",
+    "center": {
+      "lat": 37.5689,
+      "lng": 127.0094
+    },
+    "then": {
+      "year": 1972,
+      "src": "/era/_dev_then.svg"
+    },
+    "now": {
+      "year": 2025,
+      "src": "/era/_dev_now.svg"
+    },
+    "photo": null,
+    "source": "DEV placeholder — not real imagery",
+    "source_url": "https://map.ngii.go.kr/"
+  }
+]

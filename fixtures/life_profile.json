@@ -1,0 +1,57 @@
+{
+  "person": {
+    "display_name": "DEV FIXTURE (not a real person)",
+    "birth_year": 1945,
+    "hometown": "전남 나주"
+  },
+  "eras": [
+    {
+      "id": "era-child",
+      "label": "Childhood in Naju",
+      "start_year": 1945,
+      "end_year": 1962,
+      "age_range": "0-17",
+      "places": [
+        {
+          "id": "p-naju",
+          "name_then": "전남 나주 (고향)",
+          "type": "home",
+          "modern_query": "전라남도 나주시",
+          "evidence_quote": "고향은 전남 나주예요",
+          "confidence": 0.9,
+          "geo": {
+            "lat": 35.016,
+            "lng": 126.7108,
+            "display_name": "나주시, 전라남도",
+            "source": "fixture"
+          }
+        }
+      ]
+    },
+    {
+      "id": "era-seoul-work",
+      "label": "First job in Seoul",
+      "start_year": 1962,
+      "end_year": 1970,
+      "age_range": "17-25",
+      "places": [
+        {
+          "id": "p-pyeonghwa",
+          "name_then": "동대문 평화시장",
+          "type": "work",
+          "modern_query": "서울 중구 평화시장",
+          "evidence_quote": "동대문 평화시장에서 일했어요",
+          "confidence": 0.8,
+          "geo": {
+            "lat": 37.5689,
+            "lng": 127.0094,
+            "display_name": "평화시장, 서울 중구",
+            "source": "fixture"
+          }
+        }
+      ]
+    }
+  ],
+  "habits": [],
+  "source_text": "고향은 전남 나주예요. 열일곱에 친구랑 서울 올라와서 동대문 평화시장에서 일했어요."
+}

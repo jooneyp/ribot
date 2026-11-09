@@ -1,0 +1,32 @@
+{
+  "case_id": "hook-1962",
+  "era": {
+    "living_in": {
+      "label": "just arrived in Seoul with a friend to find work",
+      "approx_year": 1962,
+      "year_range": [
+        1958,
+        1966
+      ],
+      "age": 17
+    },
+    "intent": "looking_for_someone",
+    "evidence": [
+      {
+        "quote": "내가 어제 친구랑 같이 서울에 왔어요",
+        "why": "She describes arriving in Seoul as yesterday."
+      },
+      {
+        "quote": "친구는 취직했나?",
+        "why": "She is thinking about a friend looking for a job."
+      }
+    ],
+    "questions_for_family": [
+      "Where did she first arrive in Seoul?",
+      "Where was her first job?",
+      "Where did the friend she came with live?"
+    ]
+  },
+  "profile": null,
+  "plan": null
+}
