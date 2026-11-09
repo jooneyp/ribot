@@ -1,5 +1,6 @@
 // FROZEN (Joe). Browser client for all API routes. `?mock=1` returns fixtures without network.
-import type { EraEstimate, EraImagery, EraInput, LifeProfile, Plan, PlanInput, ProfileInput, ReplayCase, ReplayRun, RevealMetrics } from "./contracts";
+import type { CluesInput, CluesResult, EraEstimate, EraImagery, EraInput, LifeProfile, Plan, PlanInput, ProfileInput, ReplayCase, ReplayRun, RevealMetrics } from "./contracts";
+import cluesFx from "@/fixtures/clues.json";
 import eraFx from "@/fixtures/era_estimate.json";
 import profileFx from "@/fixtures/life_profile.json";
 import planFx from "@/fixtures/plan.json";
@@ -33,6 +34,7 @@ export const api = {
   /** Geographic replays only (plan != null). The hook case reveal is local UI: family_words[0] + source_url. */
   reveal: (case_id: string, plan: Plan) =>
     isMock() ? Promise.resolve((revealFx as unknown as Record<string, RevealMetrics>)[case_id]) : post<RevealMetrics>("/api/replay/reveal", { case_id, plan }),
+  clues: (b: CluesInput) => (isMock() ? Promise.resolve(cluesFx as unknown as CluesResult) : post<CluesResult>("/api/clues", b)),
   imagery: async (): Promise<EraImagery[]> => {
     if (isMock()) return imageryFx as EraImagery[];
     const r = await fetch("/api/imagery");

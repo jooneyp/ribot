@@ -119,6 +119,46 @@
         "time": "실종 나흘째(16일) 오전 9시 50분께",
         "how": "경찰 체취증거견"
       }
+    },
+    {
+      "id": "replay-bulgwang",
+      "role": "phone-call replay (clues inside the tower radius)",
+      "source_url": "https://www.hani.co.kr/arti/society/society_general/895733.html",
+      "source_note": "한겨레 2019-05-29, 은평경찰서 실종수사팀 동행 르포",
+      "date": "2019-05-22",
+      "age_band": "70s",
+      "sex": "F",
+      "home": "서울 은평구 (동 미기재)",
+      "report_words": "화장실에 간 사이 치매에 걸린 엄마가 집을 나갔다",
+      "report_words_en": "While I was in the bathroom, my mother, who has dementia, left the house.",
+      "before_leaving_words": [
+        "논에 가야 한다"
+      ],
+      "before_leaving_words_en": [
+        "I have to go to the rice paddy."
+      ],
+      "profile_past_residence": "전남 고흥",
+      "profile_provenance": "Article: she farmed and lived alone in Goheung until her daughter brought her to Seoul earlier that year.",
+      "phone_words": [
+        "공원 같다. 놀이터, 학교 근처"
+      ],
+      "phone_words_en": [
+        "Feels like a park. A playground, near a school."
+      ],
+      "phone_words_provenance": "She said this to her daughter on the phone; the daughter passed it to police.",
+      "tower_area_query": "녹번서근린공원",
+      "tower_radius_km": 1,
+      "tower_note": "Real-time cell tower tracking gave a 1 km radius; the last tower was at a church right next to Nokbeonseo Park.",
+      "reveal_mode": "text",
+      "found": {
+        "place": "근처 주택가 한가운데 자리한 조그만 놀이터",
+        "place_en": "A small playground in the middle of a nearby residential area",
+        "time": "집을 나간 지 7시간 만 (오후 5시 30분께 발견)",
+        "how": "실종수사팀, 기지국 위치 + 통화 속 단편 키워드",
+        "distance_from_home_note": "집에서 약 2km"
+      },
+      "tower_area_note": "The article says '녹번서공원'; today's map lists 녹번서근린공원 (은평구 녹번동 85-4). Treated as the same park — our inference, not stated in the article.",
+      "home_level": "district"
     }
   ],
   "baseline_note": "25 consecutive Korean news reports of found dementia patients (2025-01~2026-11, collected 2026-11-09): only 1 reports a past-place link, 24 unknown. Do NOT compute any hit rate from news. See cases_baseline.jsonl."
