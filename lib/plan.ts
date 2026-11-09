@@ -10,6 +10,10 @@ function overlaps(era: Era, range: [number, number] | null): boolean {
 
 type SelectedPlace = { place: Place; era: Era | null; eraMatch: number; isHometown: boolean };
 
+const round2 = (x: number) => Math.round(x * 100) / 100;
+// A proposed departure hub geocoded farther than this from last seen is a wrong-city hit: keep the name, drop the pin.
+const HUB_MAX_KM = 30;
+
 const FINDER_CARDS: Record<PlanInput["era"]["intent"], FinderCard> = {
   going_home: {
     ko: ["따지지 마세요.", "\"고향 가세요? 같이 가요.\"", "천천히, 옆에서 걸어 주세요."],
@@ -94,12 +98,12 @@ export async function buildPlan(input: PlanInput, assumption = "assumed 3 km/h w
     const geo = await placeGeo(place);
     if (!geo) return null;
     const distance = haversineKm(lastSeenGeo, geo);
-    const reachability = distance <= 5
+    const reachability = round2(distance <= 5
       ? 1
       : input.era.intent === "going_home" || input.era.intent === "going_to_work"
         ? 0.8
-        : Math.max(0.2, 1 - distance / 300);
-    const score = eraMatch * reachability * place.confidence;
+        : Math.max(0.2, 1 - distance / 300));
+    const score = round2(eraMatch * reachability * place.confidence);
     return {
       rank: 1,
       place_id: place.id,
@@ -125,7 +129,7 @@ export async function buildPlan(input: PlanInput, assumption = "assumed 3 km/h w
         name: proposal.name,
         kind: proposal.kind,
         line: proposal.line,
-        geo,
+        geo: geo && haversineKm(lastSeenGeo, geo) <= HUB_MAX_KM ? geo : null,
         label: "proposed, verify" as const,
       };
     }));
