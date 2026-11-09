@@ -10,6 +10,9 @@ type Props = {
   reveal: RevealMetrics | null;
   profile: LifeProfile | null;
   words: string[];
+  wordTranslations: string[];
+  showWordEvidence: boolean;
+  possessivePronoun: string;
   busy: string | null;
   error: string | null;
   thenNow: EraImagery[];
@@ -17,7 +20,7 @@ type Props = {
   onReveal: () => void;
 };
 
-export default function ResultPanel({ run, reveal, profile, words, busy, error, thenNow, onThenNow, onReveal }: Props) {
+export default function ResultPanel({ run, reveal, profile, words, wordTranslations, showWordEvidence, possessivePronoun, busy, error, thenNow, onThenNow, onReveal }: Props) {
   if (error)
     return (
       <aside className="results">
@@ -30,34 +33,41 @@ export default function ResultPanel({ run, reveal, profile, words, busy, error, 
   if (!run)
     return (
       <aside className="results empty">
-        <span>01</span>
-        <p>Choose a replay or enter her words.</p>
-        <span>02</span>
-        <p>Ribot reads which time of her life she is living in, then ranks that era&apos;s places on today&apos;s map.</p>
+        <p>Choose a replay or enter {possessivePronoun} words.</p>
+        <p>Ribot reads which time of life the person is living in, then ranks that era&apos;s places on today&apos;s map.</p>
       </aside>
     );
 
   const { era, plan } = run;
   const closest = reveal?.candidates.find((c) => c.rank === reveal.nearest_candidate_rank) ?? null;
+  const hasKnownTime = era.living_in.approx_year != null || era.living_in.age != null;
   return (
     <aside className="results" aria-live="polite">
       <div className="eyebrow">Era estimate</div>
-      <h2>Living in: {unknown(era.living_in.label)}</h2>
-      <p className="result-meta">
-        ~{unknown(era.living_in.approx_year)} · age ~{unknown(era.living_in.age)}
+      <p className={`result-meta ${hasKnownTime ? "" : "unknown-time"}`}>
+        {era.living_in.approx_year == null ? "Year unknown" : `~${era.living_in.approx_year}`} · age {era.living_in.age == null ? "unknown" : `~${era.living_in.age}`}
       </p>
-      {words.length > 0 && era.evidence.length > 0 && <HighlightedWords words={words} evidence={era.evidence} className="result-words" />}
+      <h2>Living in: {unknown(era.living_in.label)}</h2>
+      {showWordEvidence && words.length > 0 && era.evidence.length > 0 && <HighlightedWords words={words} translations={wordTranslations} evidence={era.evidence} className="result-words" />}
       {era.evidence.length > 0 && (
         <ul className="why-list">
-          {era.evidence.map((e) => (
-            <li key={e.quote}><q lang="ko">{e.quote}</q> {e.why}</li>
-          ))}
+          {era.evidence.map((e) => {
+            const wordIndex = words.findIndex((word) => word.includes(e.quote));
+            return (
+              <li key={e.quote}>
+                <q lang="ko">{e.quote}</q>
+                {wordIndex >= 0 && wordTranslations[wordIndex] && <span className="quote-subtitle">{wordTranslations[wordIndex]}</span>}
+                <span>{e.why}</span>
+              </li>
+            );
+          })}
         </ul>
       )}
       <section className="result-section">
         <span className="section-label">Intent</span>
         <strong className="intent">{era.intent.replaceAll("_", " ")}</strong>
       </section>
+      {plan && !reveal && <button className="primary reveal-button" onClick={onReveal}>Reveal</button>}
       {thenNow.length > 0 && (
         <section className="result-section">
           {thenNow.map((image) => (
@@ -115,7 +125,6 @@ export default function ResultPanel({ run, reveal, profile, words, busy, error, 
               </div>
             ))}
           </section>
-          {!reveal && <button className="primary reveal-button" onClick={onReveal}>Reveal</button>}
         </>
       )}
       {reveal && (

@@ -12,6 +12,11 @@ import type { EraImagery, LatLng, LifeProfile, ReplayCase, ReplayRun, RevealMetr
 const MapView = dynamic(() => import("@/components/map/MapView"), { ssr: false });
 
 type Tab = "replay" | "words" | "profile";
+type CaseWithSubtitles = ReplayCase & {
+  her_words_en?: string[];
+  family_words_en?: string[];
+  report_words_en?: string | null;
+};
 const HOOK_ID = "hook-1962";
 const CASE_TITLES: Record<string, string> = { "hook-1962": "The question", "replay-srt": "The station", "replay-naju": "The hometown" };
 const IMAGERY_YEARS = 15;
@@ -21,6 +26,11 @@ const message = (e: unknown, fallback: string) => (e instanceof Error ? e.messag
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const lines = (text: string) => text.split("\n").map((w) => w.trim()).filter(Boolean);
 const approxKm = (a: LatLng, b: LatLng) => Math.hypot((a.lat - b.lat) * 111, (a.lng - b.lng) * 88);
+const pronouns = (sex: string | null | undefined) => sex === "M"
+  ? { subject: "he", possessive: "his", contraction: "he's" }
+  : sex === "F"
+    ? { subject: "she", possessive: "her", contraction: "she's" }
+    : { subject: "they", possessive: "their", contraction: "they're" };
 
 /** Imagery whose `then.year` ± 15 overlaps the year range and that has a point within ~15 km of its center. */
 function imageryNear(imagery: EraImagery[], range: [number | null, number | null], points: LatLng[]) {
@@ -35,7 +45,7 @@ function imageryNear(imagery: EraImagery[], range: [number | null, number | null
 export default function Home() {
   const [present, setPresent] = useState(false);
   const [tab, setTab] = useState<Tab>("replay");
-  const [cases, setCases] = useState<ReplayCase[]>([]);
+  const [cases, setCases] = useState<CaseWithSubtitles[]>([]);
   const [selectedId, setSelectedId] = useState(HOOK_ID);
   const [imagery, setImagery] = useState<EraImagery[]>([]);
   const [run, setRun] = useState<ReplayRun | null>(null);
@@ -54,12 +64,13 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
 
   const selectedCase = cases.find((c) => c.id === selectedId) ?? null;
+  const selectedPronouns = pronouns(selectedCase?.sex);
   const isHook = tab === "replay" && selectedId === HOOK_ID;
   const imageryItem = imagery.find((i) => i.id === openImagery) ?? null;
 
   useEffect(() => {
     setPresent(new URLSearchParams(window.location.search).has("present"));
-    api.cases().then((all) => setCases(all.filter((c) => c.role !== "README only"))).catch((e) => setError(message(e, "Could not load cases.")));
+    api.cases().then((all) => setCases(all.filter((c) => c.role !== "README only") as CaseWithSubtitles[])).catch((e) => setError(message(e, "Could not load cases.")));
     api.imagery().then((list) => setImagery(Array.isArray(list) ? list : [])).catch(() => setImagery([]));
   }, []);
 
@@ -197,13 +208,16 @@ export default function Home() {
 
   const mapProfile = tab === "profile" ? profile : run?.profile ?? null;
   const shownWords = tab === "words" ? lines(wordsText) : selectedCase?.her_words ?? (selectedCase?.report_words ? [selectedCase.report_words] : []);
+  const shownWordsEn = tab === "words"
+    ? []
+    : selectedCase?.her_words_en ?? (selectedCase?.report_words_en ? [selectedCase.report_words_en] : []);
 
   return (
     <main className={`app-shell ${present ? "present" : ""}`}>
       <header className="topbar">
         <div>
           <span className="brand-mark" aria-hidden>R</span>
-          <h1>Ribot <span>— Search where she&apos;s from</span></h1>
+          <h1>Ribot <span>— Search where {tab === "replay" ? selectedPronouns.contraction : "she's"} from</span></h1>
         </div>
         {!present && <p className="mode">Prototype · family-guided search</p>}
       </header>
@@ -221,6 +235,7 @@ export default function Home() {
           {tab === "replay" && (
             <div className="panel-body">
               <div className="eyebrow">Published case replay</div>
+              <div className="present-case" aria-hidden={!present}>{CASE_TITLES[selectedId] ?? selectedId}</div>
               <div className="case-list">
                 {cases.map((c) => (
                   <button key={c.id} className={selectedId === c.id ? "selected" : ""} onClick={() => setSelectedId(c.id)}>
@@ -232,7 +247,20 @@ export default function Home() {
               {selectedCase && !isHook && (
                 <div className="case-input">
                   <span className="section-label">Input</span>
-                  {selectedCase.report_words && <p><small>Report</small><span lang="ko">“{selectedCase.report_words}”</span></p>}
+                  {selectedCase.report_words && (
+                    <p>
+                      <small>{selectedPronouns.possessive[0].toUpperCase() + selectedPronouns.possessive.slice(1)} family&apos;s report</small>
+                      <span lang="ko">“{selectedCase.report_words}”</span>
+                      {selectedCase.report_words_en && <span className="quote-subtitle">{selectedCase.report_words_en}</span>}
+                    </p>
+                  )}
+                  {!selectedCase.report_words && selectedCase.family_words?.[0] && (
+                    <p>
+                      <small>{selectedPronouns.possessive[0].toUpperCase() + selectedPronouns.possessive.slice(1)} family said</small>
+                      <span lang="ko">“{selectedCase.family_words[0]}”</span>
+                      {selectedCase.family_words_en?.[0] && <span className="quote-subtitle">{selectedCase.family_words_en[0]}</span>}
+                    </p>
+                  )}
                   <p><small>Home</small><span lang="ko">{unknown(selectedCase.home)}</span></p>
                   <p><small>Hometown (family)</small><span lang="ko">{unknown(selectedCase.profile_hometown)}</span></p>
                 </div>
@@ -362,7 +390,10 @@ export default function Home() {
           run={run}
           reveal={reveal}
           profile={tab === "profile" ? profile : null}
-          words={isHook ? [] : shownWords}
+          words={shownWords}
+          wordTranslations={shownWordsEn}
+          showWordEvidence={!isHook}
+          possessivePronoun={selectedPronouns.possessive}
           busy={busy}
           error={error}
           thenNow={tab === "profile" ? [] : thenNow}
