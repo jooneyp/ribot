@@ -29,17 +29,13 @@ function Sources({ ids }: { ids: string[] }) {
     .map(numberById)
     .filter(
       (card, index, cards) =>
-        cards.findIndex(
-          (candidate) =>
-            candidate.source_name === card.source_name &&
-            candidate.source_url === card.source_url,
-        ) === index,
+        cards.findIndex((candidate) => candidate.source_url === card.source_url) === index,
     );
 
   return (
     <footer className={styles.sources}>
       {sources.map((source) => (
-        <a key={`${source.source_name}-${source.source_url}`} href={source.source_url}>
+        <a key={source.source_url} href={source.source_url}>
           {source.source_name} · {shortUrl(source.source_url)}
         </a>
       ))}
@@ -242,9 +238,11 @@ export function Deck() {
         move(event.clientX < window.innerWidth / 3 ? -1 : 1);
       }}
     >
-      <div className={styles.frame}>{slides[active]}</div>
-      <div className={styles.slideNumber} aria-label={`Slide ${active + 1} of ${SLIDE_COUNT}`}>
-        {String(active + 1).padStart(2, "0")} / {String(SLIDE_COUNT).padStart(2, "0")}
+      <div className={styles.frame}>
+        {slides[active]}
+        <div className={styles.slideNumber} aria-label={`Slide ${active + 1} of ${SLIDE_COUNT}`}>
+          {String(active + 1).padStart(2, "0")} / {String(SLIDE_COUNT).padStart(2, "0")}
+        </div>
       </div>
     </main>
   );
