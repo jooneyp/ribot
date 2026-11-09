@@ -80,7 +80,7 @@ export async function geocode(query: string): Promise<GeoResult | null> {
   const key = process.env.KAKAO_REST_KEY?.trim();
   let result: GeoResult | null = null;
   if (key) {
-    result = (await kakao(normalized, "keyword", key)) ?? (await kakao(normalized, "address", key));
+    result = (await kakao(normalized, "address", key)) ?? (await kakao(normalized, "keyword", key));
   }
   if (!result) result = await nominatim(normalized);
   cache.set(normalized, result);

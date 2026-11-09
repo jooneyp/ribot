@@ -80,10 +80,11 @@ export async function runReplay(caseId: string): Promise<ReplayRun> {
   if (!profile || !entry.home) return { case_id: entry.id, era, profile: null, plan: null };
 
   const city = stripParenthetical(entry.home);
+  const lastSeenQuery = entry.id === "replay-naju" ? "광주광역시" : city;
   const plan = await buildPlan({
     profile,
     era,
-    last_seen: { label: `${city} (city-level)`, query: city },
+    last_seen: { label: `${city} (city-level)`, query: lastSeenQuery },
     elapsed_hours: 1,
   }, "demo elapsed time 1 h");
   return { case_id: entry.id, era, profile, plan };
