@@ -395,10 +395,10 @@ export default function Home() {
           {tab === "profile" && (
             <div className="panel-body">
               <div className="eyebrow">Fill it once</div>
-              <p className="intro">Her family describes places, routines and eras once — typed, or a phone recording.</p>
+              <p className="intro">Her family fills it once: her stories, places, routines, memories with her husband, and the address history from her 주민등록초본 (every registered move, with dates). Typed, pasted, or a phone recording.</p>
               <label>
-                Family&apos;s words
-                <textarea value={profileText} onChange={(e) => setProfileText(e.target.value)} placeholder="고향은… 열일곱에 서울 올라와서…" rows={9} lang="ko" />
+                Family&apos;s words + address history
+                <textarea value={profileText} onChange={(e) => setProfileText(e.target.value)} placeholder={"고향은… 열일곱에 서울 올라와서…\n할아버지랑은 창경원에서 처음 만나셨대요.\n\n[주민등록초본 주소 변동 사항 붙여넣기]\n서울특별시 ○○구 ○○동 …  1976-05-10 전입"} rows={9} lang="ko" />
               </label>
               <Recorder onText={setProfileText} onError={setError} />
               <button className="primary" disabled={!!busy} onClick={() => void buildProfile()}>
