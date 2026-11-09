@@ -80,26 +80,8 @@ function FitBounds({ points, maxZoom = 13, compact = false, enabled = true }: { 
 }
 
 function ZoomTiles() {
-  const map = useMap();
-  const [satellite, setSatellite] = useState(map.getZoom() >= 17);
-  useMapEvents({
-    zoom: () => setSatellite(map.getZoom() >= 17),
-    zoomend: () => setSatellite(map.getZoom() >= 17),
-  });
-  return <>
-    <TileLayer opacity={satellite ? 0 : 1} attribution="Esri, HERE, Garmin, &copy; OpenStreetMap contributors" url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}" maxNativeZoom={16} maxZoom={19} />
-    <TileLayer opacity={satellite ? 0 : 1} url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}" maxNativeZoom={16} maxZoom={19} />
-    <Pane name="satellite-tiles" className="ribot-satellite-pane" style={{ zIndex: 201 }}>
-      <TileLayer
-        pane="satellite-tiles"
-        opacity={satellite ? 1 : 0}
-        attribution="Esri, Maxar, Earthstar Geographics"
-        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-        maxNativeZoom={19}
-        maxZoom={19}
-      />
-    </Pane>
-  </>;
+  // One street map at every zoom (OpenStreetMap, native to z19): same look on overview, street level and camera tour.
+  return <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maxNativeZoom={19} maxZoom={19} />;
 }
 
 const wait = (milliseconds: number) => new Promise<void>((resolve) => window.setTimeout(resolve, milliseconds));
@@ -395,7 +377,7 @@ export default function MapView({ plan, profile, decade, reveal, imagery, onSele
         })}
         {!clues && routes?.routes.flatMap((walkingRoute) => evenlySample(walkingRoute.cctvs, 16).map((cctv, index) => <Marker key={`cctv-${walkingRoute.to_place_id}-${index}`} position={[cctv.lat, cctv.lng]} icon={cctvIcon()} zIndexOffset={550}><Tooltip direction="right">Public CCTV{cctv.address ? ` · ${cctv.address}` : ""}</Tooltip></Marker>))}
         {reveal && nearestCandidate && !hubHit && <Polyline positions={[[reveal.found.geo.lat, reveal.found.geo.lng], [nearestCandidate.geo.lat, nearestCandidate.geo.lng]]} pathOptions={{ className: "ribot-reveal-line", color: "#ff7058", weight: 2, opacity: 0.9 }}><Tooltip key={String(suppressedLabels.has("reveal-distance"))} permanent direction="right" offset={[78, 0]} className={`ribot-reveal-distance-label ribot-priority-label ribot-label-id-reveal-distance ribot-label-priority-65 ribot-label-order-0${suppressedLabels.has("reveal-distance") ? " is-collision-hidden" : ""}`}>{distanceLabel(nearestDistance!)}</Tooltip></Polyline>}
-        {!clues && plan && <Marker position={[plan.last_seen.geo.lat, plan.last_seen.geo.lng]} icon={pinIcon({ kind: "home", label: "", present })} zIndexOffset={500}><Tooltip permanent direction="top" offset={[0, -20]} className="ribot-pin-label ribot-last-seen-label ribot-priority-label ribot-label-id-last ribot-label-priority-100 ribot-label-order-0"><strong>Last seen</strong> · {plan.last_seen.label}</Tooltip></Marker>}
+        {!clues && plan && <Marker position={[plan.last_seen.geo.lat, plan.last_seen.geo.lng]} icon={pinIcon({ kind: "home", label: "", present })} zIndexOffset={500}>{!(reveal && hubHit) && <Tooltip permanent direction="top" offset={[0, -20]} className="ribot-pin-label ribot-last-seen-label ribot-priority-label ribot-label-id-last ribot-label-priority-100 ribot-label-order-0"><strong>Last seen</strong> · {plan.last_seen.label}</Tooltip>}</Marker>}
         {!clues && candidates.map((candidate) => {
           const matched = imageryFor(candidate.geo, imagery);
           const color = candidate.layer === "routine" ? "#0f9f91" : candidate.layer === "past" ? "#f05239" : undefined;
