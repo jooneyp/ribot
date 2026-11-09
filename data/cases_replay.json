@@ -29,7 +29,7 @@
         "Where is this?",
         "I guess I got lost.",
         "I came to Seoul with a friend yesterday. It's my first time here, so I must have gotten lost. I'm sorry.",
-        "South Jeolla, of course.",
+        "South Jeolla.",
         "Did my friend get the job?"
       ],
       "family_words_en": [
@@ -37,7 +37,8 @@
         "She came up to an unfamiliar Seoul at 17, did every kind of work, married my father and raised four children."
       ],
       "article_date": "2023-09-22",
-      "article_date_note": "Publication date of the OhmyNews report (article:published_time). The son's '62 years ago' is relative to the event, which happened on or before this date."
+      "article_date_note": "Publication date of the OhmyNews report (article:published_time). The son's '62 years ago' is relative to the event, which happened on or before this date.",
+      "source_note_en": "OhmyNews, 2023-09-22 (report by the responding police officer)"
     },
     {
       "id": "replay-srt",
@@ -50,14 +51,16 @@
       "home": "서울 (구 미기재)",
       "report_words": "치매를 앓고 있는 남편이 고향에 내려간다며 짐을 싸서 집을 나갔다",
       "profile_hometown": "익산",
-      "profile_hometown_provenance": "Police got 'Iksan' only after reaching him by phone. With Ribot, the family registered it before he ever left.",
+      "profile_hometown_provenance": "Police learned 'Iksan' only by reaching him on his phone. With Ribot, the family enters it once, before anyone goes missing.",
       "carried_phone": true,
       "found": {
         "place": "서울 수서역, 익산행 열차 객실 안",
         "time": "아침 7시께 승강장 포착, 출발 1분 전 열차 탑승해 출발 중단 후 발견",
         "how": "기지국 추적으로 수서역 특정 + 통화 중 '익산' 단서"
       },
-      "report_words_en": "My husband, who has dementia, packed a bag and left home, saying he was going down to his hometown."
+      "report_words_en": "My husband, who has dementia, packed a bag and left home, saying he was going down to his hometown.",
+      "home_en": "Seoul (district not published)",
+      "source_note_en": "Hankyoreh, 2024-07-23 (National Police Agency video)"
     },
     {
       "id": "replay-naju",
@@ -73,7 +76,7 @@
         "할아버지가 전부터 기억이 가물가물해지고, 집을 나서는 경우가 잦았다"
       ],
       "profile_hometown": "전남 나주",
-      "profile_hometown_provenance": "Article: found place was his hometown village in Naju. Use city level '전남 나주' as input so the exact found spot is not leaked.",
+      "profile_hometown_provenance": "His family knew his hometown, Naju. Police only learned it after he was found there.",
       "found": {
         "place": "전남 나주시 영산동 봉황천 인근 인도",
         "time": "새벽 2시",
@@ -81,8 +84,11 @@
         "how": "나주 U-City 통합운영센터 CCTV 관제요원 신고"
       },
       "family_words_en": [
-        "Grandfather's memory had been fading for a while, and he often wandered out of the house."
-      ]
+        "Grandfather's memory had been fading for a while, and he often left the house."
+      ],
+      "_note_internal": "Article: found place was his hometown village in Naju. Use city level '전남 나주' as input so the exact found spot is not leaked.",
+      "home_en": "Gwangju (exact address not published)",
+      "source_note_en": "Seoul Shinmun, 2018-06-29 (Naju Police Facebook post)"
     },
     {
       "id": "replay-sinchon",
@@ -92,7 +98,7 @@
       "age_band": "70s",
       "home": "서울 은평구 불광동",
       "profile_past_residence": "젊었을 때 신촌 로터리 근처 거주",
-      "profile_provenance": "Investigator learned it after finding him. Treat as hypothetical pre-registration.",
+      "profile_provenance": "Investigator learned it after finding her. Treat as hypothetical pre-registration.",
       "found": {
         "place": "신촌 로터리 부근",
         "time": "신고 다음 날"
@@ -115,10 +121,14 @@
       "reveal_mode": "text",
       "found": {
         "place": "개나리가 무성한 하천변 인근 풀숲 (하천명 미기재)",
-        "place_en": "In thick forsythia brush by a stream (the article does not name the stream)",
+        "place_en": "In brush near a stream bank thick with forsythia (stream not named)",
         "time": "실종 나흘째(16일) 오전 9시 50분께",
-        "how": "경찰 체취증거견"
-      }
+        "how": "경찰 체취증거견",
+        "near_water": true,
+        "time_en": "Day 4, around 9:50 a.m., found by a police scent dog"
+      },
+      "home_en": "Yonghyeon-dong, Uijeongbu",
+      "source_note_en": "Yonhap, 2025-07-16"
     },
     {
       "id": "replay-bulgwang",
@@ -153,12 +163,16 @@
       "found": {
         "place": "근처 주택가 한가운데 자리한 조그만 놀이터",
         "place_en": "A small playground in the middle of a nearby residential area",
-        "time": "집을 나간 지 7시간 만 (오후 5시 30분께 발견)",
+        "time": "오후 5시 30분께 발견 (오전 11시 실종), 오후 5시 50분 딸과 재회 — 집을 나간 지 7시간 만",
         "how": "실종수사팀, 기지국 위치 + 통화 속 단편 키워드",
-        "distance_from_home_note": "집에서 약 2km"
+        "distance_from_home_note": "집에서 약 2km",
+        "time_en": "Found around 5:30 p.m., about 6.5 hours after she left",
+        "distance_from_home_note_en": "About 2 km from home"
       },
       "tower_area_note": "The article says '녹번서공원'; today's map lists 녹번서근린공원 (은평구 녹번동 85-4). Treated as the same park — our inference, not stated in the article.",
-      "home_level": "district"
+      "home_level": "district",
+      "home_en": "Eunpyeong-gu, Seoul",
+      "source_note_en": "Hankyoreh, 2019-05-29 (Eunpyeong Police missing-persons team)"
     }
   ],
   "baseline_note": "25 consecutive Korean news reports of found dementia patients (2025-01~2026-11, collected 2026-11-09): only 1 reports a past-place link, 24 unknown. Do NOT compute any hit rate from news. See cases_baseline.jsonl."

@@ -84,8 +84,9 @@ export async function findClueSpots(input: CluesInput, max = 8): Promise<CluesRe
   const subject = PINPOINT.find((p) => keywords.includes(p)) ?? keywords[0];
   const score = (m: { spot: ClueSpot; self: Set<string> }) => (m.self.has(subject) ? 10 : 0) + m.self.size + m.spot.near.length;
   const spots = all
+    .filter((m) => haversineKm(m.spot.geo, center) > 0.05) // the tower point itself is not a clue
     .sort((a, b) => score(b) - score(a) || a.spot.distance_km - b.spot.distance_km)
-    .slice(0, max)
+    .slice(0, Math.min(max, 5))
     .map((m) => m.spot);
   return { center, radius_km: input.radius_km, landmarks, spots };
 }

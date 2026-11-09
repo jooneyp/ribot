@@ -87,7 +87,7 @@ function SinceNineCounter() {
       {count !== null && (
         <p>
           Since 9:00 AM today: <strong>~{count.toLocaleString("en-US")}</strong>{" "}
-          reports in Korea
+          reports in Korea, at last year&apos;s pace
         </p>
       )}
     </div>
@@ -226,7 +226,7 @@ const slides = [
       <Stat id="G10c" compact />
       <Quote id="G10b" />
     </div>
-    <p className={styles.cardLine}>The manual asks for it. Nobody computes it.</p>
+    <p className={styles.cardLine}>The manual asks for it. Ribot computes it.</p>
     <Sources ids={["G8c", "G8d", "G10c", "G10b"]} />
   </section>,
   <section className={styles.slide} key="product">
@@ -258,7 +258,7 @@ const slides = [
   </section>,
   <section className={`${styles.slide} ${styles.closing}`} key="closing">
     <p className={styles.closeLead}>
-      Korea already asks families to pre-register fingerprints ({numberById("K3a").value}).
+      Korea already asks families to pre-register fingerprints. After 14 years, only {numberById("K3a").value} have.
       <span>We add one question: where would she go home to?</span>
     </p>
     <h2>Ribot</h2>

@@ -45,14 +45,11 @@ const FINDER_CARDS: Record<PlanInput["era"]["intent"], FinderCard> = {
   },
 };
 
-function whyText(selected: SelectedPlace, range: [number, number] | null, km: number): string {
-  const what = selected.isHometown ? "Hometown (family profile)" : `${selected.era?.label ?? "Profile"} place`;
-  const era = !range
-    ? "era unknown, all eras kept"
-    : selected.eraMatch === 1
-      ? `era overlaps ${range[0]}–${range[1]}`
-      : `outside ${range[0]}–${range[1]}, kept as hometown`;
-  return `${what} · ${era} · ${round1(km)} km from last seen`;
+function whyText(selected: SelectedPlace, range: [number, number] | null, _km: number): string {
+  if (selected.layer === "routine") return "Where she goes these days";
+  if (selected.isHometown) return range ? `Hometown · from the family profile` : "Hometown · from the family profile";
+  const label = selected.era?.label ?? "Family profile";
+  return range && selected.eraMatch === 1 ? `${label} · matches ${range[0]}–${range[1]}` : label;
 }
 
 function selectPlaces(input: PlanInput): SelectedPlace[] {
@@ -142,7 +139,10 @@ export async function buildPlan(input: PlanInput, assumption = MANUAL_RING): Pro
   const named = (c: Candidate) => c.name.split(/\s+/).some((t) => t.length >= 2 && !GENERIC.has(t) && heard.includes(t));
   for (const c of candidates) if (named(c)) c.why = `She named it · ${c.why}`;
   candidates.sort((a, b) => b.score - a.score || Number(named(b)) - Number(named(a)) || a.distance_km_from_last_seen - b.distance_km_from_last_seen);
-  candidates.forEach((candidate, index) => { candidate.rank = index + 1; });
+  // Show ranks in the order the panel checks the layers (routine first unless she is heading somewhere).
+  const GENERIC_PLACE = /^(서울|서울특별시|서울시|부산|대구|인천|광주|대전|울산)$/;
+  const kept = candidates.filter((c) => !GENERIC_PLACE.test(c.name.trim()));
+  candidates.length = 0; candidates.push(...kept);
 
   let sendFirst: Hub[] = [];
   if (candidates[0] && candidates[0].distance_km_from_last_seen > 15) {
@@ -159,9 +159,13 @@ export async function buildPlan(input: PlanInput, assumption = MANUAL_RING): Pro
     }));
   }
 
-  const hazards = await nearbyHazards(lastSeenGeo);
+  // City-level last seen (e.g. 'Seoul') says nothing about the streams near home: skip the danger layer.
+  const hazards = input.last_seen.label.includes("(city-level)") ? [] : await nearbyHazards(lastSeenGeo);
   const headingSomewhere = ["going_home", "going_to_work", "looking_for_someone"].includes(input.era.intent);
   const checkOrder: Layer[] = headingSomewhere ? ["past", "routine", "near_danger"] : ["routine", "near_danger", "past"];
+  const layerOf = (c: Candidate) => (c.layer === "routine" ? "routine" : "past");
+  candidates.sort((a, b) => checkOrder.indexOf(layerOf(a)) - checkOrder.indexOf(layerOf(b)));
+  candidates.forEach((candidate, index) => { candidate.rank = index + 1; });
 
   return {
     last_seen: { label: input.last_seen.label, geo: lastSeenGeo },

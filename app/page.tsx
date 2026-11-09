@@ -550,7 +550,7 @@ export default function Home() {
       <footer>
         {tab === "replay" && selectedCase ? (
           <>
-            <span>Real case, as published.</span>
+            <span>Real case, published. Ribot runs it as a replay.</span>
             <a href={selectedCase.source_url} target="_blank" rel="noreferrer">Source: {selectedCase.source_note} ↗</a>
           </>
         ) : (

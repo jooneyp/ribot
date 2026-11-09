@@ -22,7 +22,7 @@
     {
       "id": "J7a",
       "value": "17,345 / 573",
-      "label": "people with dementia reported missing in Japan, 2025 / confirmed dead",
+      "label": "people with dementia reported missing in Japan, 2025 / confirmed dead that year",
       "period": "2025",
       "source_name": "National Police Agency of Japan (令和7年 行方不明者 PDF)",
       "source_url": "https://www.npa.go.jp/publications/statistics/safetylife/R07yukuefumeisha.pdf",
@@ -31,7 +31,7 @@
     {
       "id": "K4",
       "value": "970,000",
-      "label": "people with dementia in Korea, 2025 (projected to pass 1 million in 2026)",
+      "label": "estimated people with dementia in Korea, 2025 (projected to pass 1 million in 2026)",
       "period": "2025",
       "source_name": "Ministry of Health and Welfare (2023 dementia epidemiology survey)",
       "source_url": "https://www.mohw.go.kr/board.es?mid=a10503010100&bid=0027&act=view&list_no=1484959",
@@ -40,7 +40,7 @@
     {
       "id": "G8b",
       "value": "25%",
-      "label": "fatality rate if not found within the first 24 hours",
+      "label": "fatality rate if not found within the first 24 hours (US search-and-rescue data)",
       "period": "Koester, Lost Person Behavior (2008)",
       "source_name": "Robert Koester, Lost Person Behavior — Dementia",
       "source_url": "https://www.dbs-sar.com/LPB/Dementia.pdf",
@@ -49,7 +49,7 @@
     {
       "id": "G8a",
       "value": "1%",
-      "label": "respond when their name is called",
+      "label": "respond to searchers' shouts (US search-and-rescue data)",
       "period": "Koester, Lost Person Behavior (2008)",
       "source_name": "Robert Koester, Lost Person Behavior — Dementia",
       "source_url": "https://www.dbs-sar.com/LPB/Dementia.pdf",
@@ -156,7 +156,7 @@
     },
     {
       "id": "K6",
-      "value": "“Without a region, CCTV takes a long time.”",
+      "value": "“If the area isn't narrowed down, CCTV takes a long time.”",
       "label": "Police: many missing people with dementia carry no phone, so searches fall back to CCTV",
       "period": "2021",
       "source_name": "Financial News (police official), 2021-11-15",
@@ -184,7 +184,7 @@
     {
       "id": "G14",
       "value": "58%",
-      "label": "were on a usual, permitted errand alone just before going missing (325 US cases)",
+      "label": "were on a usual, permitted outing alone when they went missing (325 US cases)",
       "period": "2003–2008 (published 2011)",
       "source_name": "Rowe et al., BMC Geriatrics 11:28 (2011)",
       "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3141319/",
@@ -193,7 +193,7 @@
     {
       "id": "G15",
       "value": "Close, and in nature",
-      "label": "Deaths happened mostly in unpopulated areas (exposure, drowning), closer to where they were last seen",
+      "label": "Those who died were found closer to where they were last seen, in unpopulated places (exposure, drowning)",
       "period": "2003–2008 (published 2011)",
       "source_name": "Rowe et al., BMC Geriatrics 11:28 (2011)",
       "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3141319/",
@@ -202,7 +202,7 @@
     {
       "id": "G16",
       "value": "5.4 → 2.7 hours",
-      "label": "UK police scheme that records routines and known locations before anyone goes missing (online Herbert Protocol, with optional tags): first missing incidents after joining were found in 2.73 h vs 5.39 h before (846 participants; observational, p=.04)",
+      "label": "Families registered routines and familiar places with police in advance: first missing incidents were resolved in 2.73 h vs 5.39 h (Avon & Somerset Police scheme, 846 enrolled)",
       "period": "Avon and Somerset Police records to June 2023 (published 2026)",
       "source_name": "Morrissey, King, Au-Yeung, Hornberger — Innovation in Aging 10(3) igaf132 (2026)",
       "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12962802/",
@@ -211,7 +211,7 @@
     {
       "id": "G17",
       "value": "61%",
-      "label": "of lost Alzheimer's patients in Virginia searches were found in a creek/drainage (28%) or stuck in thick brush (33%)",
+      "label": "of lost Alzheimer's patients in Virginia searches were found in a creek or stuck in thick brush (36 cases with terrain recorded)",
       "period": "Virginia SAR records from 1986 (published 1995)",
       "source_name": "Koester & Stooksbury, Wilderness and Environmental Medicine 6:34-43 (1995)",
       "source_url": "https://www.dbs-sar.com/SAR_Research/JWM.pdf",
